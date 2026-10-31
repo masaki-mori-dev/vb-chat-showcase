@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="ヒヨコが汗をかいて一息ついている「おつかれさま」のスタンプ">
+  <title>おつかれさま</title>
+
+  <g stroke="#E08A1E" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M 103 172 L 103 186"/>
+    <path d="M 103 186 L 93 193 M 103 186 L 103 195 M 103 186 L 113 193"/>
+    <path d="M 137 172 L 137 186"/>
+    <path d="M 137 186 L 127 193 M 137 186 L 137 195 M 137 186 L 147 193"/>
+  </g>
+  <ellipse cx="120" cy="146" rx="41" ry="32" fill="#FFD84D" stroke="#C98A10" stroke-width="6"/>
+  <ellipse cx="120" cy="153" rx="25" ry="20" fill="#FFF0B8"/>
+  <ellipse cx="58" cy="138" rx="23" ry="13" fill="#FFD84D" stroke="#C98A10" stroke-width="5" transform="rotate(-18 81 138)"/>
+  <ellipse cx="182" cy="138" rx="23" ry="13" fill="#FFD84D" stroke="#C98A10" stroke-width="5" transform="rotate(18 159 138)"/>
+  <g>
+    <g stroke="#C98A10" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M 110 48 q -6 -16 2 -24"/>
+      <path d="M 120 44 q -1 -18 1 -26"/>
+      <path d="M 130 48 q 6 -16 -2 -24"/>
+    </g>
+    <circle cx="120" cy="84" r="43" fill="#FFD84D" stroke="#C98A10" stroke-width="6"/>
+    <path d="M 94 81 q 9 -13 18 0" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 128 81 q 9 -13 18 0" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="86" cy="98" rx="11" ry="6" fill="#FF8FA8" opacity="0.7"/>
+    <ellipse cx="154" cy="98" rx="11" ry="6" fill="#FF8FA8" opacity="0.7"/>
+    <path d="M 120 90 L 132 98 L 120 107 L 108 98 Z" fill="#F5A623" stroke="#C97C10" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 109 98 L 131 98" stroke="#C97C10" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <path d="M 50 58 q 7 9 7 14 a 7 7 0 0 1 -14 0 q 0 -5 7 -14 Z" fill="#8FD3F4" stroke="#3FA7DC" stroke-width="3"/>
+  <path d="M 36 86 q 5.6 7.2 5.6 11.2 a 5.6 5.6 0 0 1 -11.2 0 q 0 -4 5.6 -11.2 Z" fill="#8FD3F4" stroke="#3FA7DC" stroke-width="3"/>
+  <path d="M 190 56 q 6.3 8.1 6.3 12.6 a 6.3 6.3 0 0 1 -12.6 0 q 0 -4.5 6.3 -12.6 Z" fill="#8FD3F4" stroke="#3FA7DC" stroke-width="3"/>
+  <path d="M 178 104 q 14 -2 24 -10" stroke="#C98A10" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.55"/>
+  <path d="M 182 118 q 16 0 26 -6" stroke="#C98A10" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.4"/>
+
+  <text x="120" y="222" text-anchor="middle"
+        font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif"
+        font-size="29" font-weight="bold"
+        fill="#8A5E08" stroke="#FFFFFF" stroke-width="7" paint-order="stroke fill">おつかれさま</text>
+</svg>

@@ -1,0 +1,336 @@
+﻿/* ============================================
+   vb-chat プロジェクト、theme.css
+
+   サイトの配色は、このファイルが唯一の定義元。
+
+   【決まりごと】
+   CSSの中に色を直接書かないこと。必ずここの変数を var() で参照する。
+   同じ色を各ファイルへ書き写すと、テーマカラーを変えたいときに何か所も直す
+   ことになり、必ずどこかが直し漏れて食い違う。
+
+   新しい色が必要になったら、まずここへ変数として足してから使うこと。
+
+   【このファイルに書かないもの】
+   - 文字サイズ・余白（配色ではないため。Site.cssの:rootに置く）
+   - 白（#FFFFFF）… テーマを変えても動かないため、変数にしない
+   - 利用者ごとに変わる色（吹き出しの縁など）… パレットとは役割が違う
+
+   【読み込み方】
+   Site.MasterとChat/ChatRoom.aspxの両方で、それぞれのCSSより先に読み込む。
+   ChatRoom.aspxはSite.Masterを使わない独立ページのため、2か所に書く必要がある。
+   ============================================ */
+
+:root {
+    /* --- テーマカラー --- */
+    /* テーマカラーだけは「RGB値」と「色」の2本立てにしている。
+       rgba()は色コード（#2563EB）を受け取れず、数値の並びしか受け付けないため、
+       半透明で使う色は数値の並びとして持ち、そこから不透明版を組み立てる。
+       半透明版を別変数（--color-accent-focus-ringなど）として持たせると、
+       同じ色の値が2か所に残ることになり、「定義元は1か所」という目的に反する。 */
+    --color-accent-rgb: 37, 99, 235; /* テーマカラーのRGB値。半透明で使うとき用 */
+    --color-accent: rgb(var(--color-accent-rgb)); /* テーマカラー。リンク・ボタン・強調。通常はこちらを使う */
+    --color-accent-dark: #1D4ED8; /* テーマカラーの濃い版（送信ボタンのhover） */
+    --color-accent-bg: #EFF3FE; /* テーマカラーの薄い背景（ボタンのhover背景） */
+    /* --- 発言の中のリンク（オートリンク）---
+       白い吹き出しの上に出るので、テーマカラーそのままでよい（白の上で 5.17:1）。
+       **こっそりの窓の中は地が暗いので、末尾の .private-talk-layer のルールが差し替える** */
+    --color-link: var(--color-accent); /* 発言の中のリンク */
+    --color-link-hover: var(--color-accent-dark); /* 同・マウスを乗せたとき */
+    /* --- アカウントID（名前の下の「@ユーザー名」）---
+       テーマカラーの濃いほう（#1D4ED8）。**いちばん濃い地 #C7D9F5（参加者一覧・バー）の上で 4.69:1**
+       （--color-accent の #2563EB だと同じ地で 3.56:1 しかなく、文字の基準 4.5:1 に届かない）。
+       ログの地 #E1EAFA の上で 5.5:1、ラウンジのプロフィールの地 #F7F7F7 の上で 6.2:1。
+       こっそりの窓（暗い地）では、--color-private-link に差し替える（ChatRoom.css の .private-talk-layer .account-id）。
+       **明るくするときは、#C7D9F5 の上で 4.5:1 を割らないか必ず測ること**（トリップの色と同じ決まり） */
+    --color-account-id: var(--color-accent-dark);
+    /* --- 管理人のもの---
+       「薄い青の地＋青い線」＝管理人のもの、と1つの見た目にそろえる。
+       ラウンジの管理人の顔（どこまでが1人分かを囲う）と、部屋の設定パネルの「部屋の設定」（管理人だけの場所）の2か所。
+       札（.owner-badge）が --color-accent の地なので、同じ色の仲間にしてある */
+    --color-owner-bg: var(--color-accent-bg); /* 管理人のものの地 */
+    --color-owner-line: rgba(var(--color-accent-rgb), 0.75); /* 管理人のものの線。重なった色は #5887F0 で、
+        管理人の地（#EFF3FE）・ラウンジの地（#F0F4FC）の上で 3.1:1（線や枠の見分けの目安 3:1 に届く濃さ。0.55 だと 2.2:1 だった） */
+    /* --- 背景（3段階。外側ほど薄く、内側ほど濃い） --- */
+    --color-background: #F0F4FC; /* 背景・薄。ページ全体 */
+    --color-background-mid: #E1EAFA; /* 背景・中。チャットログ */
+    --color-background-dark: #C7D9F5; /* 背景・濃。プロフィールバー、入力エリア、日付区切り */
+    --color-background-gray: #F7F7F7; /* 背景・グレー。名前を決めよう、プロフィール表示、部屋作成エリア */
+    /* --- 文字（濃い順） --- */
+    --color-text: #333333; /* 本文の文字 */
+    --color-text-strong: #111111; /* 部屋の中の文字（本文より濃い） */
+    --color-text-sub: #4A5568; /* 副次的な文字（人数ボタン、歯車） */
+    --color-text-quiet: #525D71; /* 控えめな文字（文字数カウンタの平常時）。
+        入力エリアの背景 #C7D9F5 の上で 4.64:1。本文として読める範囲で、いちばん薄いあたり。
+        これ以上薄くすると読めなくなる。--color-text-muted（#64748B）は同じ背景で
+        3.32:1 しかなく、基準（4.5:1）に足りないため、ここには使わない */
+    --color-text-gray: #666666; /* 文字・グレー（部屋一覧の参加者名） */
+    --color-text-muted: #64748B; /* 薄い文字（時刻など） */
+    --color-text-faint: #9CA6C4; /* 一番薄い文字 */
+    /* --- 枠線 --- */
+    --color-border: #B4C0D8; /* 枠線。部屋の外で使う共通の線（ヘッダー下・フッター上・入力欄・部屋一覧の行） */
+    --color-border-input: #D1D9E8; /* 枠線。入力欄 */
+    --color-border-light: #E2E8F0; /* 枠線・薄。入力エリアの上辺 */
+    --color-border-gray: #DDDDDD; /* 枠線・グレー（アイコン選択の枠、ナビの区切り線） */
+    /* --- 部品の色 --- */
+    /* 次の2つは、今は同じ値だが、意味が違うため別の変数にしている。
+       「未選択アイコンのグレー」と「トグルOFFのグレー」は、片方だけ変えたくなる場面が
+       必ず来る。同じ値だからと1つにまとめると、その日に困る。 */
+    --color-icon-unselected: #CCCCCC; /* 未選択アイコンの色 */
+    --color-toggle-off: #CCCCCC; /* トグルスイッチOFFの背景 */
+    /* --- 状態を知らせる帯 --- */
+    --color-warn-bg: #FEF3C7; /* 警告帯の背景 */
+    --color-warn-text: #92400E; /* 警告帯の文字 */
+    --color-warn-border: #E5C77B; /* 警告帯の閉じるボタンの枠 */
+    --color-warn-btn-bg: #FDF6E3; /* 警告帯の閉じるボタンのhover背景 */
+    /* 押したあと戻ってきた行の目印（Scripts/site.js の「17」）。
+       警告帯の #FEF3C7 では白い地の上で薄すぎて、本番の PC で「光った感じがしない」と言われたので1段濃くした */
+    --color-return-bg: #FDE68A;
+    /* 「見えている」の印（記事の「みんなに公開中」・お知らせの「表示中」）。
+       文字 #166534 と地 #DCFCE7 で約 6.5:1。**色だけで伝えない**（印には必ず文字を書く） */
+    --color-status-on-text: #166534;
+    --color-status-on-bg: #DCFCE7;
+    --color-status-on-border: #86EFAC;
+    --color-error-bg: #DC2626; /* 切断バーの背景 */
+    --color-error-text: #B91C1C; /* エラーを、背景ではなく文字色で伝えるときの赤
+        （送信できなかった理由・残り文字数の超過）。--color-error-bgの#DC2626は
+        背景用で、明るい背景に文字として載せるとコントラストが足りないため分けてある */
+    --color-unread-mark: var(--color-error-text); /* こっそりの未読の印の地（白い文字を乗せる。白 対 #B91C1C で 6.47:1）。
+        【わざと var() で受けてある】カスタムプロパティは宣言された要素（ここ :root）で var() が解決される。
+        こっそりの層は中で --color-error-text を明るい赤へ上書きするが、この値は :root で #B91C1C に
+        決まってから受け継がれるので、**バーの上の印と、層の中のタブの印が、同じ赤になる** */
+    --color-alert-bg: #FF6B6B; /* 通知メッセージの背景 */
+    --color-knock: #6D5140; /* ノックのボタン・ノックの小窓の縁。
+        入室（青）と違う色にして「入る」ではなく「頼む」ことを見分けやすくする。
+        【落ち着かせた】15-2b は #92400E（彩度0.82。--color-warn-text と同じ値）で、
+        指摘：少し明るすぎて目立ちすぎる。こげ茶のように、彩度か輝度を落とす。
+        明るさはほぼそのまま（0.31→0.34）、彩度を0.26まで落とした。白い文字を乗せて 7.24:1（前は 7.09:1） */
+    --color-modal-overlay: rgba(0, 0, 0, 0.45); /* 確認ダイアログの下敷き。
+        画面の広い面積を覆うので、白や影と違って「色」として扱う（変数にする）。
+        濃さは、下の文字が読めなくなりすぎず、手前の箱が浮いて見える線で決めた */
+    /* --- こっそり話す（秘密の窓）。ここだけ暗い --- */
+    /* 要望：VBチャットの青系統のままでも、こっそりの窓は濃く暗い背景の色にして、
+       秘密らしい雰囲気にする。サイトの青系統のまま、明るさだけを落としてある。
+
+       【使い方】色をそれぞれの部品へ直接書かない。
+       `.private-talk-window` の中で、既存の変数（--color-background-mid など）を
+       この値で上書きしている。そうすれば**中身のCSSを1行も触らずに暗くなる**。
+
+       【コントラスト比は実測値。薄くするときは測り直すこと】
+       小さい文字（時刻の10px）が潰れると、暗くした意味が無くなる */
+    /* === 透け具合 ===
+
+       **つまみは1つ。部位ごとの配り方は、ここの係数が持つ。**
+       要望：もう少し透けてよく、ログの部分も少し透けてよい。
+       すべてを透けさせる必要はなく、透けない部分やあまり透けない部分があってよい。
+
+       --pt-see-through … 0（透けない）〜 1（いちばん透ける）。既定は 0.30。
+       利用者が窓のつまみで動かすと、JS が :root へ書き込む。
+
+       【:root に書くこと。層に書いてはいけない】
+       カスタムプロパティは**宣言された要素で var() が解決される**ので、
+       ここ（:root）で組み立てている色は、:root の --pt-see-through しか見ない。
+       層に書いても、色は既定のままになる
+
+       【部位ごとの配り方】
+                        既定(0.30)   いちばん透ける(1.0)
+         枠            0.70          0.20   … いちばん大きく透ける
+         ログ          0.88          0.60   … 控えめ（文字が乗るため）
+         見出しの帯    0.93          0.75   … **いちばん透けにくい**
+
+       【見出しの帯に下限があるのは、詰まないための守りである】
+       帯が消えると**つまみ自体を見つけられなくなって、戻せない。**
+       窓を画面の外へ出し切ると詰む、というのと同じ形
+
+       【上限で丸めて読みやすさを守る、はしない】
+       決定：ここは作り込まず、利用者の好みに任せる。
+       **既定は安全、そこから動かすのは本人の選択**、という切り分け */
+    --pt-see-through: 0.30;
+    --color-private-frame: rgba(18, 30, 52, calc(0.92 - 0.72 * var(--pt-see-through))); /* 窓の枠 */
+    --color-private-bg: rgba(20, 32, 58, calc(1 - 0.40 * var(--pt-see-through))); /* ログの地 */
+    --color-private-head: rgba(14, 26, 46, calc(1 - 0.25 * var(--pt-see-through))); /* 見出しの帯 */
+    --color-private-text: #EAF0FA; /* 窓の中の本文。--color-private-bg の上で 14.14:1（実測） */
+    --color-private-quiet: #A8B6D0; /* 時刻・お知らせ。--color-private-bg の上で 7.91:1（実測）
+        （明るい側の --color-text-quiet は 4.64:1。時刻は10pxと小さいので、
+          暗い側では余裕を持たせてある） */
+    --color-private-border: #3A4A69; /* 窓の中の枠線（入力欄・タブ） */
+    /* 【テーマカラー（--color-accent）は、暗い側でも入れ替えない】
+       送信ボタン・選ばれたタブ・窓のふちは、そのまま #2563EB を使う。
+       一度 #6699F2 へ明るくしてみたが、**白い文字が乗る場所なので、
+       明るくすると逆に読めなくなった**（実測＝白 対 #6699F2 で 2.84:1）。
+       #2563EB なら、白い文字が 5.17:1、暗い地に対して 3.13:1（どちらも実測）
+       （部品の見分けの基準は 3:1）。**どちらの向きも満たすのは、元の色のほうだった** */
+    --color-private-error: #FCA5A5; /* 断られた理由・未読の点。
+        --color-error-text（#B91C1C）は暗い地の上で読めないため、赤の明るい側を使う */
+    --color-private-link: #9FC4FF; /* 窓の中の、発言のリンク（オートリンク）。
+        --color-accent（#2563EB）は暗い地の上で 3.13:1 しかなく、**文字としては読めない**
+        （部品の見分けの 3:1 は満たすが、文字の基準は 4.5:1）。
+        --color-private-error と同じ考え方で、青の明るい側を使う */
+    --color-private-link-hover: #C7DCFF; /* 同・マウスを乗せたとき（さらに明るく） */
+
+    /* 【名前とアイコンの色は、ここでは決まらない】
+       あれは**その人が自分で選んだ色**なので、パレットの持ち物ではない。
+       ただし暗い地の上では、濃い色を選んだ人の名前が読めなくなる
+       （実測＝#DC2626 の赤で 3.35:1）。そこで `Scripts/chat-room.js` の
+       `readableOnPrivateBg` が、**色味を残したまま明るさだけ足して**基準へ乗せる。
+       上の --color-private-bg を変えたら、あちらは自動で追いかける
+       （地の色を読んで計算しているため）。実測＝持ち上げたあとの最悪が 4.51:1 */
+
+    /* --- トリップの文字色 ---
+       トリップ（名前の下に出る16進10桁）の色は、**トリップ自身の1桁目**で決まる
+       （このファイルの末尾の .trip-code のルール）。利用者は選べない。アイコンの色とは別物。
+       読む側が、10桁を1文字ずつ照合しなくても、色で見当をつけられるようにするため。
+       **色は補助で、本体は文字**である（色の見分けがつきにくい人にも、文字だけで成り立つ）。
+
+       【16色。1桁目（0〜f）ごとに1色】（F-2 は8色で2桁ずつ同じ色だった）
+       要望：どうせなら 16 色にする。
+
+       【色あいだけで16に割らない。明るさを1色おきに変える】
+       色あいを16に割ると隣同士が22.5度しか離れず、小さい文字では見分けにくい
+       （「同じ色」より「似ているが違う色」のほうが紛らわしい）。
+       計算で確かめた、いちばん近い2色の色差（CIELAB の ΔE）は次のとおり。
+         ・8色 ……………………………… 17.1
+         ・16色、明るさを揃えたまま …………  8.5 ← 半分になる
+         ・16色、明るさを1色おきに変える …… 14.7 ← これにした
+       偶数番（0,2,4…e）は「明るめ」＝#C7D9F5 の上で 4.7:1、奇数番（1,3,5…f）は「濃いめ」＝7.5:1。
+       色あいは 5.6度から22.5度刻み（出発点を少しずらすと、いちばん近い組が離れた）、彩度は55%
+       （65%にするともう少し離れるが、青がボタンの青に近づき、名前より派手になるので止めた）。
+
+       【どの色でも読める】いちばん濃い背景 --color-background-dark（#C7D9F5。
+       参加者一覧・プロフィールバー）の上で 4.70:1 以上（計算で出した値）。
+         ・--color-background-dark 上 … 4.70〜7.61:1
+         ・--color-background-mid（ログの地）上 … 5.56〜9.00:1
+         ・--color-background-gray（ラウンジのプロフィール）上 … 6.28〜10.17:1
+       **ここを明るくするときは、#C7D9F5 の上で 4.5:1 を割らないか必ず測ること**。
+
+       【見分けにくかったら、8色へ戻す】実機で似すぎていたら、下の16個を 8色に戻し、
+       末尾の対応表を「1桁目2つで1色」に戻す（git の 41e0973 の版にある） */
+    --trip-color-0: #A0392E; /* 赤（明るめ） */
+    --trip-color-1: #573619; /* 茶（濃いめ） */
+    --trip-color-2: #675B1E; /* 黄土（明るめ） */
+    --trip-color-3: #374113; /* オリーブ（濃いめ） */
+    --trip-color-4: #3B661E; /* 黄緑（明るめ） */
+    --trip-color-5: #164715; /* 緑（濃いめ） */
+    --trip-color-6: #1E6837; /* 緑（明るめ） */
+    --trip-color-7: #144537; /* 深緑（濃いめ） */
+    --trip-color-8: #1F646B; /* 青緑（明るめ） */
+    --trip-color-9: #1C4060; /* 紺（濃いめ） */
+    --trip-color-a: #394FC6; /* 青（明るめ） */
+    --trip-color-b: #402A90; /* 藍（濃いめ） */
+    --trip-color-c: #8135B6; /* 紫（明るめ） */
+    --trip-color-d: #661E69; /* 赤紫（濃いめ） */
+    --trip-color-e: #9E2E78; /* 紅紫（明るめ） */
+    --trip-color-f: #702037; /* えんじ（濃いめ） */
+
+    /* --- こっそりの窓（暗い地）の上のトリップの色 ---
+       上の16色は暗い地の上では読めないので、**同じ色あいのまま明るくした**16色を別に持つ
+       （末尾の .private-talk-layer のルールが、窓の中だけこちらに差し替える）。
+       基準の地は、既定の透け具合（0.30）の窓のログを白い吹き出しの上に重ねた #303B52
+       （いちばん明るくなる場合。名前の色を持ち上げるときと同じ基準）。
+         ・偶数番 5.0:1 ／ 奇数番 7.0:1（明るさを1色おきに変えるのは、上と同じ理由）
+         ・彩度60%。いちばん近い2色の色差は ΔE 14.2（85%にすると緑が蛍光色になり、名前より派手）
+       透け具合を上げて地が明るくなると、読みにくくなる。名前と同じく、そこは本人の選択 */
+    --trip-color-private-0: #E49B94;
+    --trip-color-private-1: #E9C7A8;
+    --trip-color-private-2: #C4AD31;
+    --trip-color-private-3: #BED862;
+    --trip-color-private-4: #6CC230;
+    --trip-color-private-5: #89E186;
+    --trip-color-private-6: #31C664;
+    --trip-color-private-7: #7DDFC3;
+    --trip-color-private-8: #33BECC;
+    --trip-color-private-9: #B2D1EC;
+    --trip-color-private-a: #9FAAE7;
+    --trip-color-private-b: #D0C7F1;
+    --trip-color-private-c: #C99DE7;
+    --trip-color-private-d: #EDBDEE;
+    --trip-color-private-e: #E494C9;
+    --trip-color-private-f: #EFC1CE;
+
+    /* === 記事の本文の「よく使う色」（「その他の色…」を足した）===
+       書く画面の「文字の色」「背景の色」の小窓に、見本として並ぶ色。押すと、この色の #RRGGBB が本文に付く
+       （本文には変数ではなく色の値そのものが入る＝あとでここを変えても、書いた記事の色は変わらない。style に1本化したため）。
+       見本のほかに「その他の色…」（カラーピッカー）で自由な色も選べる。
+       **名前を足したら、Site.css（.swatch-color-〇〇／.swatch-bg-〇〇）・Articles/Edit.aspx の小窓のボタンにも足すこと**。
+
+       【どの文字の色とどの背景の色を組み合わせても読める】白と5つの背景のどれの上でも、6つの文字の色が
+       4.5:1 以上（計算。いちばん低い組み合わせは 赤 × 灰色 の 5.25:1）。
+       だいだいと緑は、最初の案（#B45309・#15803D）だと 4.07:1 まで下がったので、1段濃くした */
+    --article-color-red: #B91C1C;
+    --article-color-orange: #9A3412;
+    --article-color-green: #166534;
+    --article-color-blue: #1D4ED8;
+    --article-color-purple: #6D28D9;
+    --article-color-gray: #4A5568;
+    --article-bg-yellow: #FEF3C7;
+    --article-bg-pink: #FCE7F3;
+    --article-bg-green: #DCFCE7;
+    --article-bg-blue: #DBEAFE;
+    --article-bg-gray: #E2E8F0;
+
+    /* === 記事のページ===
+       コードの囲み … 書く画面（Quill の snow の見た目）と同じ、暗い地に明るい字（#F8F8F2 on #23241F で 15.0:1）。
+       書く画面の側は quill.snow.css に同じ値が書いてある（無改造に保つため、そちらは変数にしていない）。
+       プレビューの帯 … 「まだ公開されていない」ことを目立たせる黄色（文字は --color-text で 14:1 以上） */
+    --article-code-bg: #23241F;
+    --article-code-text: #F8F8F2;
+    --article-preview-bg: #FEF3C7;
+    --article-preview-border: #D97706;
+}
+
+
+/* ============================================
+   トリップの色の対応表
+
+   【:root の外にルールを書いているのは、このファイルでここだけ】
+   トリップは部屋（ChatRoom.aspx）とラウンジ（Site.Master の配下）の両方に出る。
+   部屋は Site.css を読まず、ラウンジは ChatRoom.css を読まないので、
+   **両方が読むCSSはこのファイルしか無い。** 対応表を2か所に写すと、
+   片方だけ直して「部屋とラウンジで同じトリップの色が違う」になる。
+   ここに置くのは色の対応だけで、大きさ・書体・置き場所は各ページのCSSが持つ。
+
+   【1桁目で16色に振る】（F-2 は8色だった）
+   1桁目は0〜fの16通りなので、1桁に1色。同じ色になる確率は1/16で、
+   そのときは文字で見分ける（色は補助）。色の選び方は :root の --trip-color-* の上にある。
+
+   【JSもVBも、色を計算しない】画面は data-trip 属性にトリップを入れるだけで、
+   色はこの属性セレクタが決める。計算する場所がどこにも無いので、食い違いようがない。
+   形の崩れた値（16進でない）は、どれにも当たらず、ページの文字色のまま出る
+
+   【こっそりの窓の中だけ、明るい16色へ差し替える】（その下の .private-talk-layer の16行）
+   窓の地は暗いので、上の16色では読めない。部屋のページにしか無い窓だが、
+   対応表を2か所に分けないために、ここに並べてある
+   ============================================ */
+
+.trip-code[data-trip^="0"] { color: var(--trip-color-0); }
+.trip-code[data-trip^="1"] { color: var(--trip-color-1); }
+.trip-code[data-trip^="2"] { color: var(--trip-color-2); }
+.trip-code[data-trip^="3"] { color: var(--trip-color-3); }
+.trip-code[data-trip^="4"] { color: var(--trip-color-4); }
+.trip-code[data-trip^="5"] { color: var(--trip-color-5); }
+.trip-code[data-trip^="6"] { color: var(--trip-color-6); }
+.trip-code[data-trip^="7"] { color: var(--trip-color-7); }
+.trip-code[data-trip^="8"] { color: var(--trip-color-8); }
+.trip-code[data-trip^="9"] { color: var(--trip-color-9); }
+.trip-code[data-trip^="a"] { color: var(--trip-color-a); }
+.trip-code[data-trip^="b"] { color: var(--trip-color-b); }
+.trip-code[data-trip^="c"] { color: var(--trip-color-c); }
+.trip-code[data-trip^="d"] { color: var(--trip-color-d); }
+.trip-code[data-trip^="e"] { color: var(--trip-color-e); }
+.trip-code[data-trip^="f"] { color: var(--trip-color-f); }
+
+.private-talk-layer .trip-code[data-trip^="0"] { color: var(--trip-color-private-0); }
+.private-talk-layer .trip-code[data-trip^="1"] { color: var(--trip-color-private-1); }
+.private-talk-layer .trip-code[data-trip^="2"] { color: var(--trip-color-private-2); }
+.private-talk-layer .trip-code[data-trip^="3"] { color: var(--trip-color-private-3); }
+.private-talk-layer .trip-code[data-trip^="4"] { color: var(--trip-color-private-4); }
+.private-talk-layer .trip-code[data-trip^="5"] { color: var(--trip-color-private-5); }
+.private-talk-layer .trip-code[data-trip^="6"] { color: var(--trip-color-private-6); }
+.private-talk-layer .trip-code[data-trip^="7"] { color: var(--trip-color-private-7); }
+.private-talk-layer .trip-code[data-trip^="8"] { color: var(--trip-color-private-8); }
+.private-talk-layer .trip-code[data-trip^="9"] { color: var(--trip-color-private-9); }
+.private-talk-layer .trip-code[data-trip^="a"] { color: var(--trip-color-private-a); }
+.private-talk-layer .trip-code[data-trip^="b"] { color: var(--trip-color-private-b); }
+.private-talk-layer .trip-code[data-trip^="c"] { color: var(--trip-color-private-c); }
+.private-talk-layer .trip-code[data-trip^="d"] { color: var(--trip-color-private-d); }
+.private-talk-layer .trip-code[data-trip^="e"] { color: var(--trip-color-private-e); }
+.private-talk-layer .trip-code[data-trip^="f"] { color: var(--trip-color-private-f); }

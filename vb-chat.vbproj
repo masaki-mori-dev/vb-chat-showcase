@@ -1,0 +1,892 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>
+    </SchemaVersion>
+    <ProjectGuid>{CD8E53D2-B177-494B-AE08-1CEEF98E43D7}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{F184B08F-C81C-45F6-A57F-5ABD9991F28F}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <RootNamespace>vb_chat</RootNamespace>
+    <AssemblyName>vb-chat</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <MyType>Custom</MyType>
+    <UseIISExpress>true</UseIISExpress>
+    <Use64BitIISExpress />
+    <IISExpressSSLPort>44308</IISExpressSSLPort>
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>WebForms_Basic.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>WebForms_Basic.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.4.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.SignalR.Core.2.4.3\lib\net45\Microsoft.AspNet.SignalR.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNet.SignalR.SystemWeb, Version=2.4.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.SignalR.SystemWeb.2.4.3\lib\net45\Microsoft.AspNet.SignalR.SystemWeb.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Owin, Version=4.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Owin.4.2.3\lib\net45\Microsoft.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Host.SystemWeb, Version=4.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Owin.Host.SystemWeb.4.2.3\lib\net45\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security, Version=4.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Owin.Security.4.2.3\lib\net45\Microsoft.Owin.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
+      <HintPath>packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.EnterpriseServices" />
+    <Reference Include="System.Web.DynamicData" />
+    <Reference Include="System.Web.Entity" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ScriptManager.MSAjax">
+      <HintPath>packages\Microsoft.AspNet.ScriptManager.MSAjax.5.0.0\lib\net45\Microsoft.ScriptManager.MSAjax.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ScriptManager.WebForms">
+      <HintPath>packages\Microsoft.AspNet.ScriptManager.WebForms.5.0.0\lib\net45\Microsoft.ScriptManager.WebForms.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Optimization, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+      <HintPath>packages\Microsoft.AspNet.Web.Optimization.1.1.3\lib\net40\System.Web.Optimization.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="WebGrease">
+      <Private>True</Private>
+      <HintPath>packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
+    </Reference>
+    <!-- 記事の本文を、保存するときに通す関所。
+         中身と理由は Articles\ArticleHtml.vb。ライセンスは MIT。
+         下の AngleSharp 以下は、HtmlSanitizer が使っているもの（NuGet が一緒に入れた） -->
+    <Reference Include="HtmlSanitizer">
+      <HintPath>packages\HtmlSanitizer.9.2.1039\lib\net47\HtmlSanitizer.dll</HintPath>
+    </Reference>
+    <Reference Include="AngleSharp">
+      <HintPath>packages\AngleSharp.1.7.2\lib\net472\AngleSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="AngleSharp.Css">
+      <HintPath>packages\AngleSharp.Css.1.0.2\lib\net472\AngleSharp.Css.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>packages\System.Collections.Immutable.10.0.11\lib\net462\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Buffers">
+      <HintPath>packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>packages\System.Text.Encoding.CodePages.8.0.0\lib\net462\System.Text.Encoding.CodePages.dll</HintPath>
+    </Reference>
+    <Reference Include="Antlr3.Runtime">
+      <Private>True</Private>
+      <HintPath>packages\Antlr.3.5.0.2\lib\Antlr3.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNet.Web.Optimization.WebForms">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.Web.Optimization.WebForms.1.1.3\lib\net45\Microsoft.AspNet.Web.Optimization.WebForms.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
+      <HintPath>packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Xml.Linq" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Collections.Specialized" />
+    <Import Include="System.Configuration" />
+    <Import Include="System.Text" />
+    <Import Include="System.Text.RegularExpressions" />
+    <Import Include="System.Web" />
+    <Import Include="System.Web.Caching" />
+    <Import Include="System.Web.Routing" />
+    <Import Include="System.Web.SessionState" />
+    <Import Include="System.Web.Security" />
+    <Import Include="System.Web.Profile" />
+    <Import Include="System.Web.UI" />
+    <Import Include="System.Web.UI.WebControls" />
+    <Import Include="System.Web.UI.WebControls.WebParts" />
+    <Import Include="System.Web.UI.HtmlControls" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Admin\GenerateIconSprite.aspx" />
+    <Content Include="Admin\RebuildArticleImageLedger.aspx" />
+    <Content Include="Content\ChatRoom.css" />
+    <Content Include="Content\Site.css" />
+    <Content Include="Content\help.css" />
+    <Content Include="Content\admin-logs.css" />
+    <Content Include="Content\lib\quill\quill.snow.css" />
+    <Content Include="Content\theme.css" />
+    <Content Include="Content\Stamps\frog\01-konnichiwa.svg" />
+    <Content Include="Content\Stamps\frog\02-ohayou.svg" />
+    <Content Include="Content\Stamps\frog\03-matane.svg" />
+    <Content Include="Content\Stamps\frog\04-arigatou.svg" />
+    <Content Include="Content\Stamps\frog\05-otsukaresama.svg" />
+    <Content Include="Content\Stamps\frog\06-ryoukai.svg" />
+    <Content Include="Content\Stamps\frog\07-gomenne.svg" />
+    <Content Include="Content\Stamps\frog\08-iine.svg" />
+    <Content Include="Content\Stamps\frog\09-www.svg" />
+    <Content Include="Content\Stamps\frog\10-nande.svg" />
+    <Content Include="Content\Stamps\frog\11-yoroshiku.svg" />
+    <Content Include="Content\Stamps\frog\12-oyasumi.svg" />
+    <Content Include="Content\Stamps\frog\13-ganbare.svg" />
+    <Content Include="Content\Stamps\frog\14-kanashii.svg" />
+    <Content Include="Content\Stamps\frog\15-omedetou.svg" />
+    <Content Include="Content\Stamps\chick\01-konnichiwa.svg" />
+    <Content Include="Content\Stamps\chick\02-ohayou.svg" />
+    <Content Include="Content\Stamps\chick\03-matane.svg" />
+    <Content Include="Content\Stamps\chick\04-arigatou.svg" />
+    <Content Include="Content\Stamps\chick\05-otsukaresama.svg" />
+    <Content Include="Content\Stamps\chick\06-ryoukai.svg" />
+    <Content Include="Content\Stamps\chick\07-gomenne.svg" />
+    <Content Include="Content\Stamps\chick\08-iine.svg" />
+    <Content Include="Content\Stamps\chick\09-www.svg" />
+    <Content Include="Content\Stamps\chick\10-nande.svg" />
+    <Content Include="Content\Stamps\chick\11-yoroshiku.svg" />
+    <Content Include="Content\Stamps\chick\12-oyasumi.svg" />
+    <Content Include="Content\Stamps\chick\13-ganbare.svg" />
+    <Content Include="Content\Stamps\chick\14-kanashii.svg" />
+    <Content Include="Content\Stamps\chick\15-omedetou.svg" />
+    <Content Include="Default.aspx" />
+    <Content Include="NotFound.aspx" />
+    <Content Include="favicon.ico" />
+    <Content Include="Global.asax" />
+    <Content Include="Chat\ChatMaster.Master" />
+    <None Include="Scripts\lib\jquery-3.7.1.intellisense.js" />
+    <None Include="Scripts\lib\jquery-3.7.1.js" />
+    <Content Include="Scripts\lib\jquery-3.7.1.min.js" />
+    <Content Include="Scripts\lib\jquery.signalR-2.4.3.js" />
+    <Content Include="Scripts\lib\jquery.signalR-2.4.3.min.js" />
+    <Content Include="Scripts\lib\jscolor.min.js" />
+    <Content Include="Scripts\icon-sprite.js" />
+    <Content Include="Scripts\chat-room.js" />
+    <Content Include="Scripts\lounge-live.js" />
+    <Content Include="Scripts\lounge-enter.js" />
+    <Content Include="Scripts\sounds.js" />
+    <Content Include="Scripts\site.js" />
+    <Content Include="Scripts\help.js" />
+    <Content Include="Scripts\admin-logs.js" />
+    <Content Include="Scripts\header-fit.js" />
+    <Content Include="Scripts\article-editor.js" />
+    <Content Include="Scripts\profile-editor.js" />
+    <Content Include="Scripts\article-toc.js" />
+    <Content Include="Scripts\lib\quill\quill.js" />
+    <Content Include="Scripts\lib\quill\LICENSE.txt" />
+    <Content Include="Scripts\lib\emoji\emoji-mart.js" />
+    <Content Include="Scripts\lib\emoji\emoji-ja.js" />
+    <Content Include="Scripts\lib\WebForms\DetailsView.js" />
+    <Content Include="Scripts\lib\WebForms\Focus.js" />
+    <Content Include="Scripts\lib\WebForms\GridView.js" />
+    <Content Include="Scripts\lib\WebForms\Menu.js" />
+    <Content Include="Scripts\lib\WebForms\MenuStandards.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjax.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxApplicationServices.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxComponentModel.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxCore.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxGlobalization.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxHistory.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxNetwork.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxSerialization.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxTimer.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxWebForms.js" />
+    <Content Include="Scripts\lib\WebForms\MSAjax\MicrosoftAjaxWebServices.js" />
+    <Content Include="Scripts\lib\WebForms\SmartNav.js" />
+    <Content Include="Scripts\lib\WebForms\TreeView.js" />
+    <Content Include="Scripts\lib\WebForms\WebForms.js" />
+    <Content Include="Scripts\lib\WebForms\WebParts.js" />
+    <Content Include="Scripts\lib\WebForms\WebUIValidation.js" />
+    <Content Include="Accounts\Home.aspx" />
+    <Content Include="Accounts\AdminMaster.Master" />
+    <Content Include="Accounts\Login.aspx" />
+    <Content Include="Accounts\Settings.aspx" />
+    <Content Include="Accounts\Profile.aspx" />
+    <Content Include="Accounts\PublicProfile.aspx" />
+    <Content Include="Accounts\UploadProfileImage.aspx" />
+    <Content Include="Notices\Manage.aspx" />
+    <Content Include="Notices\NoticeList.aspx" />
+    <Content Include="Accounts\SiteDisplay.aspx" />
+    <Content Include="Accounts\Register.aspx" />
+    <Content Include="Accounts\Verify.aspx" />
+    <Content Include="Accounts\Forgot.aspx" />
+    <Content Include="Accounts\Reset.aspx" />
+    <Content Include="Accounts\Recover.aspx" />
+    <Content Include="Accounts\Logout.aspx" />
+    <Content Include="Accounts\Setup.aspx" />
+    <Content Include="Articles\ArticleDetail.aspx" />
+    <Content Include="Articles\Manage.aspx" />
+    <Content Include="Articles\Edit.aspx" />
+    <Content Include="Articles\BlogSettings.aspx" />
+    <Content Include="Articles\Categories.aspx" />
+    <Content Include="Articles\AccountTop.aspx" />
+    <Content Include="Articles\CategoryList.aspx" />
+    <Content Include="Articles\UploadImage.aspx" />
+    <Content Include="Chat\ChatRoom.aspx" />
+    <Content Include="Chat\KeepAlive.aspx" />
+    <Content Include="Chat\LeaveBeacon.aspx" />
+    <Content Include="Admin\MailTest.aspx" />
+    <Content Include="Admin\LogSearch.aspx" />
+    <Content Include="Admin\LogReplay.aspx" />
+    <Content Include="Admin\LogExport.aspx" />
+    <Content Include="Admin\LogAudit.aspx" />
+    <Content Include="Contacts\Contact.aspx" />
+    <Content Include="Chat\Logout.aspx" />
+    <Content Include="Chat\PrivateImage.aspx" />
+    <Content Include="Chat\UploadImage.aspx" />
+    <Content Include="Chat\Lounge.aspx" />
+    <Content Include="Chat\MyChatLogs.aspx" />
+    <Content Include="Chat\MyChatLogView.aspx" />
+    <Content Include="Chat\UserControls\RoomList.ascx" />
+    <Content Include="Web.config" />
+    <!-- 画像の置き場所の中身を、実行させないための設定。
+         【Content にしてあること】発行に含める必要がある。
+         このファイルが発行されることで、Uploads\images フォルダそのものも
+         本番に作られる（利用者の画像は、そこへ増えていく）。
+         中身と理由は、そのファイル自身のコメントにある -->
+    <Content Include="Uploads\images\web.config" />
+    <!-- 記事の画像の置き場所にも、同じ設定。発行されることで Uploads\articles フォルダも本番に作られる -->
+    <Content Include="Uploads\articles\web.config" />
+    <!-- プロフィールの画像の置き場所にも、同じ設定（ブログ型の①）。発行されることで Uploads\profiles フォルダも本番に作られる -->
+    <Content Include="Uploads\profiles\web.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Accounts\AccountAuth.vb" />
+    <Compile Include="Accounts\AccountReturnUrl.vb" />
+    <Compile Include="Accounts\AdminMaster.Master.designer.vb">
+      <DependentUpon>AdminMaster.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\AdminMaster.Master.vb">
+      <DependentUpon>AdminMaster.Master</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\AccountPassword.vb" />
+    <Compile Include="Accounts\AccountStore.vb" />
+    <Compile Include="Accounts\NewMembers.vb" />
+    <Compile Include="Accounts\AccountSession.vb" />
+    <Compile Include="Accounts\AccountSettings.vb" />
+    <Compile Include="Core\PageResponse.vb" />
+    <Compile Include="Core\CanonicalUrl.vb" />
+    <Compile Include="Accounts\ProfileChoices.vb" />
+    <Compile Include="Accounts\AccountProfileRules.vb" />
+    <Compile Include="Accounts\AccountAvatar.vb" />
+    <Compile Include="Accounts\AdminMenu.vb" />
+    <Compile Include="Accounts\AccountProfileStore.vb" />
+    <Compile Include="Accounts\AccountProfileImages.vb" />
+    <Compile Include="Accounts\AccountMail.vb" />
+    <Compile Include="Accounts\AccountReset.vb" />
+    <Compile Include="Accounts\AccountRegistration.vb" />
+    <Compile Include="Accounts\AccountRetire.vb" />
+    <Compile Include="Accounts\AccountUserNames.vb" />
+    <Compile Include="Notices\SiteNoticeRules.vb" />
+    <Compile Include="Notices\SiteNoticeStore.vb" />
+    <Compile Include="Notices\SiteNotices.vb" />
+    <Compile Include="Accounts\RoleLimits.vb" />
+    <Compile Include="Accounts\AccountPageBase.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Articles\ArticleRules.vb" />
+    <Compile Include="Articles\BlogTabs.vb" />
+    <Compile Include="Articles\ArticleHtml.vb" />
+    <Compile Include="Articles\ArticleToc.vb" />
+    <Compile Include="Articles\ArticleStore.vb" />
+    <Compile Include="Articles\ArticleCategoryStore.vb" />
+    <Compile Include="Articles\ArticleDisplay.vb" />
+    <Compile Include="Articles\SiteArticles.vb" />
+    <Compile Include="Articles\BlogSidebar.vb" />
+    <Compile Include="Articles\ArticleImages.vb" />
+    <Compile Include="Articles\ArticleUsage.vb" />
+    <Compile Include="Articles\ArticleImageLedger.vb" />
+    <Compile Include="App_Start\BundleConfig.vb" />
+    <Compile Include="App_Start\RouteConfig.vb" />
+    <Compile Include="App_Start\Startup.vb" />
+    <Compile Include="Core\common.vb" />
+    <Compile Include="Core\SiteSettings.vb" />
+    <Compile Include="Core\HelpTexts.vb" />
+    <Compile Include="Core\HelpAnchors.vb" />
+    <Compile Include="Core\GateFile.vb" />
+    <Compile Include="Core\NumberInput.vb" />
+    <Compile Include="Core\SiteMail.vb" />
+    <Compile Include="Core\BodyTransport.vb" />
+    <Compile Include="Core\FormErrors.vb" />
+    <Compile Include="Core\FormOnce.vb" />
+    <Compile Include="Core\ClientEndpoint.vb" />
+    <Compile Include="Core\RateCounter.vb" />
+    <Compile Include="Core\ErrorReport.vb" />
+    <Compile Include="Core\SerialRunner.vb" />
+    <Compile Include="Core\DailyJobs.vb" />
+    <Compile Include="Core\CacheReset.vb" />
+    <Compile Include="Core\DailyReport.vb" />
+    <Compile Include="Core\LogCleanup.vb" />
+    <Compile Include="Core\SiteImage.vb" />
+    <Compile Include="Core\ImageMetadata.vb" />
+    <Compile Include="Contacts\ContactRules.vb" />
+    <Compile Include="Contacts\ContactStore.vb" />
+    <Compile Include="Contacts\ContactRequest.vb" />
+    <Compile Include="Chat\ChatMaster.Master.designer.vb">
+      <DependentUpon>ChatMaster.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\ChatMaster.Master.vb">
+      <DependentUpon>ChatMaster.Master</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Chat\ChatCommon.vb" />
+    <Compile Include="Chat\AnonId.vb" />
+    <Compile Include="Chat\TripCode.vb" />
+    <Compile Include="Chat\NameToken.vb" />
+    <Compile Include="Chat\ChatEventText.vb" />
+    <Compile Include="Chat\ChatLog.vb" />
+    <Compile Include="Chat\ChatLogReader.vb" />
+    <Compile Include="Chat\ChatLogout.vb" />
+    <Compile Include="Chat\ChatLogin.vb" />
+    <Compile Include="Chat\ChatAccountLink.vb" />
+    <Compile Include="Chat\AccountChatLog.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.Accounts.vb" />
+    <Compile Include="Chat\MyChatLogs.aspx.designer.vb">
+      <DependentUpon>MyChatLogs.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\MyChatLogs.aspx.vb">
+      <DependentUpon>MyChatLogs.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Chat\MyChatLogView.aspx.designer.vb">
+      <DependentUpon>MyChatLogView.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\MyChatLogView.aspx.vb">
+      <DependentUpon>MyChatLogView.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Chat\SiteVisitLog.vb" />
+    <Compile Include="Chat\ChatProfileValidator.vb" />
+    <Compile Include="Chat\ChatRoomRules.vb" />
+    <Compile Include="Chat\RoomPassword.vb" />
+    <Compile Include="Chat\RoomPasswordSecret.vb" />
+    <Compile Include="Chat\IconCatalog.vb" />
+    <Compile Include="Chat\StampCatalog.vb" />
+    <Compile Include="Admin\RebuildArticleImageLedger.aspx.designer.vb">
+      <DependentUpon>RebuildArticleImageLedger.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\RebuildArticleImageLedger.aspx.vb">
+      <DependentUpon>RebuildArticleImageLedger.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\LogSearch.aspx.designer.vb">
+      <DependentUpon>LogSearch.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\LogSearch.aspx.vb">
+      <DependentUpon>LogSearch.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\LogReplay.aspx.designer.vb">
+      <DependentUpon>LogReplay.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\LogReplay.aspx.vb">
+      <DependentUpon>LogReplay.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\LogExport.aspx.designer.vb">
+      <DependentUpon>LogExport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\LogExport.aspx.vb">
+      <DependentUpon>LogExport.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\LogAudit.aspx.designer.vb">
+      <DependentUpon>LogAudit.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\LogAudit.aspx.vb">
+      <DependentUpon>LogAudit.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\LogTool.vb" />
+    <Compile Include="Admin\LogToolView.vb" />
+    <Compile Include="Admin\LogToolPageBase.vb">
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\GenerateIconSprite.aspx.designer.vb">
+      <DependentUpon>GenerateIconSprite.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\GenerateIconSprite.aspx.vb">
+      <DependentUpon>GenerateIconSprite.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Default.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>Default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Default.aspx.designer.vb">
+      <DependentUpon>Default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="NotFound.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>NotFound.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="NotFound.aspx.designer.vb">
+      <DependentUpon>NotFound.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Global.asax.vb">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\Hubs\ChatHub.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.Lounge.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.Rooms.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.RoomKeys.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.Knock.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.OwnerTools.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.Appearance.vb" />
+    <Compile Include="Chat\Hubs\ChangeAppearanceResult.vb" />
+    <Compile Include="Chat\Hubs\ChatHub.RoomSettings.vb" />
+    <Compile Include="Chat\Hubs\RoomSettingsInfo.vb" />
+    <Compile Include="Chat\Hubs\KnockInfo.vb" />
+    <Compile Include="Chat\Hubs\OwnerToolsInfo.vb" />
+    <Compile Include="Chat\Hubs\LoungeSnapshot.vb" />
+    <Compile Include="Chat\Hubs\Participant.vb" />
+    <Compile Include="Chat\Hubs\ParticipantInfo.vb" />
+    <Compile Include="Chat\Hubs\JoinRoomResult.vb" />
+    <Compile Include="Chat\Hubs\SendMessageResult.vb" />
+    <Compile Include="Chat\Hubs\ErrorReportHubModule.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\MyExtensions\MyWebExtension.vb">
+      <VBMyExtensionTemplateID>Microsoft.VisualBasic.Web.MyExtension</VBMyExtensionTemplateID>
+      <VBMyExtensionTemplateVersion>1.0.0.0</VBMyExtensionTemplateVersion>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="Site.Master.designer.vb">
+      <DependentUpon>Site.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Site.Master.vb">
+      <DependentUpon>Site.Master</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Home.aspx.designer.vb">
+      <DependentUpon>Home.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Home.aspx.vb">
+      <DependentUpon>Home.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Login.aspx.designer.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Login.aspx.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Contacts\Contact.aspx.designer.vb">
+      <DependentUpon>Contact.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Contacts\Contact.aspx.vb">
+      <DependentUpon>Contact.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Forgot.aspx.designer.vb">
+      <DependentUpon>Forgot.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Forgot.aspx.vb">
+      <DependentUpon>Forgot.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Notices\Manage.aspx.designer.vb">
+      <DependentUpon>Manage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Notices\Manage.aspx.vb">
+      <DependentUpon>Manage.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Notices\NoticeList.aspx.designer.vb">
+      <DependentUpon>NoticeList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Notices\NoticeList.aspx.vb">
+      <DependentUpon>NoticeList.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\SiteDisplay.aspx.designer.vb">
+      <DependentUpon>SiteDisplay.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\SiteDisplay.aspx.vb">
+      <DependentUpon>SiteDisplay.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Register.aspx.designer.vb">
+      <DependentUpon>Register.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Register.aspx.vb">
+      <DependentUpon>Register.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Verify.aspx.designer.vb">
+      <DependentUpon>Verify.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Verify.aspx.vb">
+      <DependentUpon>Verify.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Reset.aspx.designer.vb">
+      <DependentUpon>Reset.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Reset.aspx.vb">
+      <DependentUpon>Reset.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Recover.aspx.designer.vb">
+      <DependentUpon>Recover.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Recover.aspx.vb">
+      <DependentUpon>Recover.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Settings.aspx.designer.vb">
+      <DependentUpon>Settings.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Profile.aspx.designer.vb">
+      <DependentUpon>Profile.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Profile.aspx.vb">
+      <DependentUpon>Profile.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\PublicProfile.aspx.designer.vb">
+      <DependentUpon>PublicProfile.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\PublicProfile.aspx.vb">
+      <DependentUpon>PublicProfile.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\UploadProfileImage.aspx.designer.vb">
+      <DependentUpon>UploadProfileImage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\UploadProfileImage.aspx.vb">
+      <DependentUpon>UploadProfileImage.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Settings.aspx.vb">
+      <DependentUpon>Settings.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Logout.aspx.designer.vb">
+      <DependentUpon>Logout.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Logout.aspx.vb">
+      <DependentUpon>Logout.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Accounts\Setup.aspx.designer.vb">
+      <DependentUpon>Setup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Accounts\Setup.aspx.vb">
+      <DependentUpon>Setup.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\Manage.aspx.designer.vb">
+      <DependentUpon>Manage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\Manage.aspx.vb">
+      <DependentUpon>Manage.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\Edit.aspx.designer.vb">
+      <DependentUpon>Edit.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\Edit.aspx.vb">
+      <DependentUpon>Edit.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\BlogSettings.aspx.designer.vb">
+      <DependentUpon>BlogSettings.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\BlogSettings.aspx.vb">
+      <DependentUpon>BlogSettings.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\Categories.aspx.designer.vb">
+      <DependentUpon>Categories.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\Categories.aspx.vb">
+      <DependentUpon>Categories.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\ArticleDetail.aspx.designer.vb">
+      <DependentUpon>ArticleDetail.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\ArticleDetail.aspx.vb">
+      <DependentUpon>ArticleDetail.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\AccountTop.aspx.designer.vb">
+      <DependentUpon>AccountTop.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\AccountTop.aspx.vb">
+      <DependentUpon>AccountTop.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\UploadImage.aspx.designer.vb">
+      <DependentUpon>UploadImage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\UploadImage.aspx.vb">
+      <DependentUpon>UploadImage.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Articles\CategoryList.aspx.designer.vb">
+      <DependentUpon>CategoryList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Articles\CategoryList.aspx.vb">
+      <DependentUpon>CategoryList.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\ChatPageBase.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Chat\ChatRoom.aspx.designer.vb">
+      <DependentUpon>ChatRoom.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\KeepAlive.aspx.designer.vb">
+      <DependentUpon>KeepAlive.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\KeepAlive.aspx.vb">
+      <DependentUpon>KeepAlive.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\LeaveBeacon.aspx.designer.vb">
+      <DependentUpon>LeaveBeacon.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\LeaveBeacon.aspx.vb">
+      <DependentUpon>LeaveBeacon.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Admin\MailTest.aspx.designer.vb">
+      <DependentUpon>MailTest.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\MailTest.aspx.vb">
+      <DependentUpon>MailTest.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\Logout.aspx.designer.vb">
+      <DependentUpon>Logout.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\Logout.aspx.vb">
+      <DependentUpon>Logout.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\PrivateImage.aspx.designer.vb">
+      <DependentUpon>PrivateImage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\PrivateImage.aspx.vb">
+      <DependentUpon>PrivateImage.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\UploadImage.aspx.designer.vb">
+      <DependentUpon>UploadImage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\UploadImage.aspx.vb">
+      <DependentUpon>UploadImage.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\ChatRoom.aspx.vb">
+      <DependentUpon>ChatRoom.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\Lounge.aspx.designer.vb">
+      <DependentUpon>Lounge.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\Lounge.aspx.vb">
+      <DependentUpon>Lounge.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Chat\UserControls\RoomList.ascx.designer.vb">
+      <DependentUpon>RoomList.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="Chat\UserControls\RoomList.ascx.vb">
+      <DependentUpon>RoomList.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+    <Content Include="Site.Master" />
+    <None Include="packages.config" />
+    <None Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="Scripts\lib\README.md" />
+    <None Include="Scripts\lib\emoji\README.md" />
+    <None Include="Scripts\lib\quill\README.md" />
+    <None Include="Database\CreateTable\CacheResets.sql" />
+    <None Include="Database\CreateTable\ChatLogAudit.sql" />
+    <None Include="Database\CreateTable\Accounts.sql" />
+    <None Include="Database\CreateTable\ArticleCategories.sql" />
+    <None Include="Database\CreateTable\ContactMessages.sql" />
+    <None Include="Database\CreateTable\UsedFormTokens.sql" />
+    <None Include="Database\CreateTable\ArticleDrafts.sql" />
+    <None Include="Database\CreateTable\ArticleImageFiles.sql" />
+    <None Include="Database\CreateTable\ArticleImageUses.sql" />
+    <None Include="Database\CreateTable\AccountPasswordResets.sql" />
+    <None Include="Database\CreateTable\AccountRegistrations.sql" />
+    <None Include="Database\CreateTable\RetiredUserNames.sql" />
+    <None Include="Database\CreateTable\SiteNotices.sql" />
+    <None Include="Database\CreateTable\AccountProfiles.sql" />
+    <None Include="Database\CreateTable\Articles.sql" />
+    <None Include="Database\CreateTable\ChatMessages.sql" />
+    <None Include="Database\CreateTable\ChatRoomBans.sql" />
+    <None Include="Database\CreateTable\ChatRooms.sql" />
+    <None Include="Database\CreateTable\DailyJobs.sql" />
+    <None Include="Database\CreateTable\IconMaster.sql" />
+    <None Include="Database\CreateTable\RoleLimits.sql" />
+    <None Include="Database\CreateTable\Roles.sql" />
+    <None Include="Database\CreateTable\SiteSettings.sql" />
+    <None Include="Database\CreateTable\StampSets.sql" />
+    <None Include="Database\CreateTable\Stamps.sql" />
+    <None Include="Database\InsertData\ChatRooms.sql" />
+    <None Include="Database\InsertData\RoleLimits.sql" />
+    <None Include="Database\InsertData\Roles.sql" />
+    <None Include="Database\InsertData\SiteSettings.sql" />
+    <None Include="Database\InsertData\StampSets.sql" />
+    <None Include="Database\InsertData\Stamps.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Data\" />
+  </ItemGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>Off</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>51558</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>https://localhost:44308/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>このプロジェクトは、このコンピューター上にない NuGet パッケージを参照しています。それらのパッケージをダウンロードするには、[NuGet パッケージの復元] を使用します。詳細については、http://go.microsoft.com/fwlink/?LinkID=322105 を参照してください。見つからないファイルは {0} です。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

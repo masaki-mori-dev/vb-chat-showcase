@@ -1,0 +1,75 @@
+﻿<%@ Master Language="VB" MasterPageFile="~/Site.Master" AutoEventWireup="false" CodeBehind="AdminMaster.Master.vb" Inherits="vb_chat.AdminMaster" %>
+
+<%-- 管理人の画面の、入れ子のマスターページ
+
+     【何をしているか】
+       ・Site.Master の、一般の人向けのもの（右上のメニューとハンバーガー・右の枠の更新履歴）を出さない
+       ・かわりに、ヘッダーに管理メニュー（ホーム｜チャット履歴｜記事｜…）を出す
+         （それまでは本文の上にメニューだけを出していた。縦の場所を取るので移した）
+       ・名前・ロール・ログアウトは、サイト全体の「右上の角」（Site.Master）に任せる
+     Chat/ChatMaster.Master と同じ形。ヘッダーのロゴ・フッター・<head> は Site.Master のまま使う。
+
+     【使うページ】/account・記事の一覧・記事の編集・カテゴリ・設定・ログイン・最初のサイト管理者を作る画面。
+     **メニューは、ログインしているときだけ出す**（ログインの画面で「記事」を押しても、
+     ログインの画面へ返されるだけなので）。
+
+     【あとで管理画面の本体を作るときの下敷きにする】
+     メニューの項目を足すときは、Accounts/AdminMenu.vb の一覧に1つ足す（右上の角のメニューにも同時に出る）。
+     **足したら、狭い画面で項目が全部見えているかを測ること**（数えるだけでは足りない＝
+     「いくつあるを数えただけでは、見えていることの確かめにならない」の落とし穴） --%>
+
+<%-- === ヘッダーの中（Site.Master の HeaderExtra。右上の角のすぐ後ろ）=== --%>
+<asp:Content ID="AdminHeaderContent" ContentPlaceHolderID="HeaderExtra" runat="server">
+
+    <%-- 【ログインしているときだけ出す】
+         ログインの画面・最初の管理人を作る画面では、この中は1バイトも書き出されない
+
+         【並び】（テストで開発者が実物を見て決めた形を、置き換えた）
+           1行目＝左にロゴ、右端に右上の角（自分のアイコン）
+           2行目＝ロゴの下に「ホーム｜チャット履歴｜記事｜…」
+
+         【markup の順＝読み上げの順＝見た目の順】ロゴ → 右上の角 → 管理メニュー → 本文。
+         CSS の order では並べ替えていない（並べ替えると、読み上げとキーボードだけ古い順になる）。
+         2行目へ回すのは、メニューに「行いっぱいの幅」を与えて折り返させているだけ --%>
+    <asp:PlaceHolder ID="AdminHeader" runat="server">
+
+        <%-- 【右端の「名前（ロール） ［ログアウト］」は、もう無い】
+             サイト全体の「右上の角」（Site.Master の AccountCornerHtml）に置き換えた。
+             アイコンを押すと、名前・ロール・ログアウトが出る。一般の人の画面とまったく同じ形 --%>
+
+        <%-- 管理メニュー
+             【nav に名前を付ける】どのナビゲーションか、読み上げで分かるように。
+             【今いる画面には aria-current】見た目の印（太字・下線・薄い地）と同じことを、読み上げにも伝える --%>
+        <%-- 【管理メニューと「使っている量」を1つの行に】（K）
+             メニューが左、使っている量が右端。幅が足りなければ、使っている量が次の行へ回る（中身任せ。幅の数字は書いていない）。
+             **使っている量は nav の外**（ページを移る項目ではないので、「管理メニュー」の中に読ませない） --%>
+        <div class="admin-nav-row">
+        <nav class="admin-nav" aria-label="管理メニュー">
+            <%-- 【項目の一覧は Accounts/AdminMenu.vb の1か所】
+                 右上の角のメニュー（Site.Master.vb）も同じ一覧から「管理画面」の下に並べる。
+                 **項目を足す・並べ替えるときは AdminMenu.vb だけを直す**（ここに li を書き足さないこと）。
+                 並び＝ホーム｜チャット履歴｜記事｜カテゴリ｜（お知らせ＝サイト管理者だけ）｜プロフィール｜設定 --%>
+            <ul>
+                <%= AdminNavItemsHtml() %>
+            </ul>
+        </nav>
+        <%-- 【使っている量は、もうここには出さない】（記事一覧の上と記事を書く画面の見出しの横だけ。Articles/ArticleUsage.vb） --%>
+        </div>
+
+    </asp:PlaceHolder>
+
+</asp:Content>
+<%-- === 本文 === --%>
+<asp:Content ID="AdminMain" ContentPlaceHolderID="MainContent" runat="server">
+
+    <asp:ContentPlaceHolder ID="AdminBody" runat="server">
+    </asp:ContentPlaceHolder>
+
+</asp:Content>
+
+<asp:Content ID="AdminScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">
+
+    <asp:ContentPlaceHolder ID="AdminScripts" runat="server">
+    </asp:ContentPlaceHolder>
+
+</asp:Content>

@@ -1,0 +1,24 @@
+﻿<%@ Master Language="VB" MasterPageFile="~/Site.Master" AutoEventWireup="false" CodeBehind="ChatMaster.Master.vb" Inherits="vb_chat.ChatMaster" %>
+<%@ Import Namespace="vb_chat" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+
+    <%-- ここに、下位ページ（Lounge.aspx等）が、それぞれの中身を書き込む --%>
+    <asp:ContentPlaceHolder ID="ChatBody" runat="server">
+    </asp:ContentPlaceHolder>
+
+    <%-- アイコンスプライトは、ここには埋め込まない（変更）。
+         Site.Master が読み込む Scripts/icon-sprite.js が、
+         ファイルとして1回だけ取ってきて差し込む。
+         以前はここで <%= common.GetIconSpriteHtml() %> と書いて86KBを貼り付けており、
+         .aspx はキャッシュされないため、ラウンジを開くたびに送り直していた --%>
+
+</asp:Content>
+
+
+<asp:Content ID="Content2" ContentPlaceHolderID="ScriptsContent" runat="server">
+
+    <asp:ContentPlaceHolder ID="ChatScripts" runat="server">
+    </asp:ContentPlaceHolder>
+
+</asp:Content>

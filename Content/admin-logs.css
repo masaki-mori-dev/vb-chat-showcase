@@ -1,0 +1,731 @@
+﻿/* ============================================
+   ログを調べる道具（/account/logs・/account/logs/view。サイト管理者だけ）
+   ============================================
+   探す画面（Admin/LogSearch.aspx）と再生の画面（Admin/LogReplay.aspx）だけが読む。
+   ほかの画面に影響しないよう、どの規則も .logtool か、この道具だけのクラス（logsearch-・logview-・logtool-）に付けてある。
+
+   【探す画面は Gmail の検索の真似】（基本ルール Z）上に丸い検索の箱が1つ、横に「▼」、開くと詳しい条件。
+   【再生の画面は部屋の吹き出しの写し】（LINE 風。左にアイコンと名前、真ん中に吹き出し、右に時刻）。
+   部屋の Content/ChatRoom.css と同じ形にそろえてあるが、部屋の画面は Site.css を読まないので、ここに写した。
+   **吹き出しの形を部屋で変えたら、ここも見直す**（片方だけ直さない）。
+   しっぽは部屋の SVG ではなく、四角を45度回した ::before（吹き出しの枠線をそのまま受け継ぐ＝色は発言者のアイコンの色）。
+
+   【並び方は中身任せ】（イントリンシック・デザインの①）。幅の数字を書いたのは、在室者の欄を
+   ボタンに替える境目（@container main）だけ＝基本ルール P（広い画面だけの部品を消すなら、代わりの出し方を）
+   ============================================ */
+
+
+/* --------------------------------------------
+   1. 探す画面
+   -------------------------------------------- */
+
+/* 検索の箱・▼・［探す］を1行に（入らなければ［探す］が折り返す） */
+.logsearch-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.logtool .logsearch-q {
+    flex: 1 1 12em;
+    min-width: 0;
+    border-radius: 999px; /* Gmail の検索の箱と同じ丸 */
+    padding-left: 16px;
+}
+
+/* 詳しい条件を開くボタン（Gmail の箱の右端の印と同じ役目） */
+.logsearch-toggle {
+    flex: 0 0 auto;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 999px;
+    background-color: #FFFFFF;
+    color: var(--color-text-sub);
+    font: inherit;
+    cursor: pointer;
+}
+    .logsearch-toggle span[aria-hidden="true"] {
+        display: inline-block;
+        transition: transform 0.15s;
+    }
+    .logsearch-toggle[aria-expanded="true"] span[aria-hidden="true"] {
+        transform: rotate(180deg);
+    }
+    .logsearch-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+.logsearch-go {
+    flex: 0 0 auto;
+}
+
+/* 詳しい条件の板（Gmail の検索の▼で開く白い板） */
+.logsearch-detail {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border-input);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+    .logsearch-detail[hidden] {
+        display: none;
+    }
+
+/* 期間（いつから 〜 いつまで）。入らなければ「いつまで」が下の行へ */
+.logsearch-period {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    flex: 1 1 16em;
+    min-width: 0;
+}
+.logtool .logsearch-date {
+    flex: 1 1 11em;
+    min-width: 0;
+}
+
+/* トリップ・アカウントID（中身が短い欄は、横いっぱいに伸ばさない＝ルール A の5） */
+.logtool .logsearch-short {
+    flex: 0 1 12em;
+}
+
+/* 打つ値ではない条件（ブラウザの印・この2人のこっそりだけ）の札。×で外す */
+.logsearch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 2px 4px 2px 12px;
+    background-color: var(--color-accent-bg);
+    border: 1px solid var(--color-border-input);
+    border-radius: 999px;
+    font-size: 13px;
+}
+.logsearch-chip-text {
+    overflow-wrap: anywhere;
+}
+.logsearch-chip-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 999px;
+    color: var(--color-text-sub);
+    text-decoration: none;
+}
+    .logsearch-chip-clear:hover {
+        background-color: #FFFFFF;
+    }
+
+.logsearch-summary {
+    margin: 12px 0 8px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* 結果の一覧・見た記録の一覧（基本ルール A の2）
+   【行数を数で決めない】（6度目の「1件は2行まで」はやめた。決定：2 行と数で決めない）
+   頭（時刻・部屋・名前／時刻・@ID・何をした・件数）は、入る限り横に並べ、入らなくなったところで次の行へ回る（flex-wrap）。
+   部屋の名前だけは、押した先で全部見られる補助の情報なので、長ければ「…」で早めに縮んでよい（上限の幅を決めてある）。
+   中身（発言の本文・見た記録の条件）は折り返して見せ、サーバーが60字で切る（Admin/LogToolView.vb の Clip。幅では切らない）。
+   右の小さい値（IP:ポート・管理人の IP）は、中身の最後の行の右に入れば同じ行、入らなければ次の行の右（LINE の時刻と同じ。.logtool-side-space）。
+   日付の区切りは .logtool-date。PC もスマホも同じ形 */
+.logsearch-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.logsearch-row {
+    border-bottom: 1px solid var(--color-border-light);
+}
+    .logsearch-row:last-child {
+        border-bottom: none;
+    }
+
+.logsearch-row--private {
+    background-color: #F6F1FF; /* こっそり（再生の画面のこっそりの吹き出しと同じ地） */
+}
+
+/* 日付の区切り（一覧の中の1行。押せない） */
+.logtool-date {
+    padding: 4px 12px;
+    background-color: var(--color-background-gray);
+    border-bottom: 1px solid var(--color-border-light);
+    color: var(--color-text-sub);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.logsearch-hit {
+    display: block;
+    padding: 8px 12px;
+    color: inherit;
+    text-decoration: none;
+}
+    .logsearch-hit:hover {
+        background-color: var(--color-accent-bg);
+    }
+    .logsearch-hit:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+/* 1件の頭（入る限り横に並べ、入らなくなったところで次の行へ） */
+.logtool-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+    min-width: 0;
+}
+
+.logtool-time {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* 部屋の名前（補助の情報。長ければ「…」で縮む。上限を決めてあるので、名前を次の行へ追い出しにくい） */
+.logsearch-room {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: min(12em, 45%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+/* 名前（＋アカウントID かトリップ）。切らない。入らなければ次の行へ回る */
+.logsearch-who {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+    /* 名前の横（同じ行）。Site.css の .account-id は display: block（チャットでは名前の下の行に出す）なので、ここでは同じ行に戻す */
+    .logsearch-who .logtool-mark {
+        display: inline;
+        margin-left: 6px;
+        white-space: nowrap;
+    }
+
+/* 件数（見た記録の頭の右端。切らない。入らなければ次の行の右へ） */
+.logtool-count {
+    flex: 0 0 auto;
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+/* 中身（折り返して見せる。字数で切るのはサーバー）。右下の値の基準 */
+.logtool-body {
+    position: relative;
+    display: block;
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+}
+
+/* 右の小さい灰色の値（IP:ポート・管理人の IP）。切らない。本物は右下に重ねる */
+.logtool-side,
+.logtool-side-space {
+    font-size: 12px;
+    font-family: Consolas, Menlo, monospace;
+    white-space: nowrap;
+}
+.logtool-side {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    color: var(--color-text-muted);
+}
+/* 見えない札（本物と同じ文字・同じ幅）。最後の行に入らなければ、これだけが次の行へ折り返す */
+.logtool-side-space {
+    display: inline-block;
+    margin-left: 10px;
+    visibility: hidden;
+}
+
+/* 種類（いくつでも。チェックボックスと文字を1つのかたまりにして、かたまりごと折り返す）
+   【罠】Site.css の .form-row label:not(.toggle-switch) { width: 80px } （部屋の設定の項目名の幅）が、.form-row の中の label 全部に効く。
+   6度目はこれでチェックボックスの label が 80px に縮められ、長い文字（サイトへの出入り）が隣へはみ出して重なった（Galaxy で見えた）。
+   width を中身の幅に戻す（打ち消す相手より細かく指す） */
+.logsearch-kinds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    flex: 1 1 14em;
+    min-width: 0;
+}
+.form-row .logsearch-kinds label.logsearch-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    min-height: 32px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* 見た記録（一覧の形は探した結果と同じ） */
+.logaudit-filter {
+    margin: 0 0 4px;
+    box-shadow: none;
+}
+.logaudit-static {
+    color: var(--color-text-muted); /* 住所を残す前の行＝押せない */
+}
+    .logaudit-static:hover {
+        background-color: transparent;
+    }
+
+/* 「何をした」と［条件を消す］［絞る］を1行に（入らなければ、ボタンの組だけ次の行の右へ） */
+.logaudit-actrow {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.logaudit-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* こっそり・入退室などの札 */
+.logtool-private-tag,
+.logtool-kind-tag {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: normal;
+}
+.logtool-private-tag {
+    background-color: #E4D8FB;
+    color: #4C2F8F;
+}
+.logtool-kind-tag {
+    background-color: var(--color-background-dark);
+    color: var(--color-text-sub);
+}
+
+.logtool-mark {
+    font-size: 11px;
+    font-weight: normal;
+}
+
+
+/* --------------------------------------------
+   2. 再生の画面
+   -------------------------------------------- */
+
+.logview-back {
+    margin-bottom: 8px;
+}
+
+.logview-center-note {
+    margin-top: 0;
+}
+
+/* こっそりのスイッチ・札・在室者・書き出す（入らなければ折り返す。右の2つは右寄せ） */
+.logview-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin: 8px 0 12px;
+}
+.logview-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.logview-tools-end {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+}
+
+/* ログ（左）と在室者（右）。入らなければ在室者が下へ回る */
+.logview-layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+/* ログの枠（部屋のログと同じ地の色。この枠の中だけスクロールする＝「もっと前」で足しても、読んでいる所が動かない） */
+.logview-log {
+    position: relative; /* 行の offsetTop の基準（真ん中へ寄せる計算） */
+    flex: 999 1 28em;
+    min-width: 0;
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 8px;
+    box-sizing: border-box;
+    background-color: var(--color-background-mid);
+    border-radius: 8px;
+}
+
+.logview-side {
+    flex: 1 1 14em;
+    min-width: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+}
+    .logview-side .admin-subhead {
+        margin-top: 0;
+    }
+
+/* 在室者のボタンは、狭いときだけ（下の @container） */
+.logview-people-btn {
+    display: none;
+}
+
+@container main (max-width: 600px) {
+    .logview-people-btn {
+        display: inline-flex;
+    }
+    /* 狭いときは、ボタンで開く。開いたらログの上に出す（基本ルール P） */
+    .logview-side {
+        display: none;
+        order: -1;
+        flex-basis: 100%;
+    }
+        .logview-side.is-open {
+            display: block;
+        }
+    .logview-log {
+        max-height: 70vh;
+    }
+}
+
+.logview-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 日付の区切り（部屋と同じ） */
+.logview-date {
+    align-self: center;
+    margin: 6px 0;
+    padding: 2px 12px;
+    font-size: 12px;
+    color: var(--color-text-sub);
+    background-color: var(--color-background-dark);
+    border-radius: 999px;
+}
+
+/* 1行まるごとが押せる（押すと小窓）。見た目はボタンらしくしない */
+.logview-hit {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 4px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+    .logview-hit:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .logview-hit:hover {
+            background-color: rgba(255, 255, 255, 0.45);
+        }
+    }
+
+/* 探していた行（色付き。最初に真ん中へ寄せる） */
+.logview-row.is-center > .logview-hit {
+    background-color: var(--color-return-bg);
+    box-shadow: inset 0 0 0 2px #D9A400;
+}
+
+/* アイコンが上、名前が下（部屋の .message-sender と同じ形。幅は部屋の --message-sender-width と同じ 68px） */
+.logview-sender {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 68px;
+    flex-shrink: 0;
+    text-align: center;
+}
+.logview-avatar {
+    width: 24px;
+    height: 24px;
+}
+    .logview-avatar svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+.logview-name {
+    max-width: 100%;
+    font-size: 11px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+/* 吹き出し（部屋の .message-bubble の写し。枠の色は発言者のアイコンの色＝style で入る） */
+.logview-bubble {
+    position: relative;
+    max-width: 75%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    background-color: #FFFFFF;
+    color: var(--color-text-strong);
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.5;
+}
+    /* しっぽ（左向き。四角を45度回し、吹き出しの枠線の左と下を受け継ぐ） */
+    .logview-bubble::before {
+        content: "";
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        width: 11px;
+        height: 11px;
+        background-color: inherit;
+        border-left: inherit;
+        border-bottom: inherit;
+        border-radius: 0 0 0 3px;
+        transform: translateY(-50%) rotate(45deg);
+    }
+
+.logview-text {
+    white-space: pre-wrap; /* 発言の改行をそのまま（部屋と同じ） */
+    overflow-wrap: anywhere;
+}
+
+.logview-time {
+    flex-shrink: 0;
+    align-self: flex-end;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* こっそり（別の色で混ざる。頭に「こっそり：送り手 → 宛先」） */
+.logview-row--private .logview-bubble {
+    background-color: #F6F1FF;
+}
+.logview-private-head {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #4C2F8F;
+}
+
+/* お知らせの行（入退室など。真ん中に小さく） */
+.logview-row--notice > .logview-hit {
+    justify-content: center;
+}
+.logview-notice {
+    padding: 2px 12px;
+    font-size: 12px;
+    color: var(--color-text-sub);
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 999px;
+    overflow-wrap: anywhere;
+}
+.logview-notice-time {
+    margin-right: 8px;
+    color: var(--color-text-muted);
+}
+
+/* もっと前／もっと後 */
+.logview-more {
+    display: block;
+    margin: 6px auto;
+    min-height: 36px;
+    padding: 4px 16px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 999px;
+    background-color: #FFFFFF;
+    color: var(--color-accent);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+    .logview-more[hidden] {
+        display: none;
+    }
+    .logview-more:disabled {
+        color: var(--color-text-muted);
+        cursor: default;
+    }
+
+.logview-status {
+    margin: 4px 0 0;
+    min-height: 1em;
+    font-size: 12px;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+/* 在室者の一覧 */
+.logview-people {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.logview-person {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--color-border-light);
+    font-size: 13px;
+}
+    .logview-person:last-child {
+        border-bottom: none;
+    }
+.logview-person-who {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    font-weight: bold;
+}
+.logview-person-meta {
+    flex: 1 1 100%;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+}
+.logview-person-link {
+    font-size: 12px;
+}
+
+
+/* --------------------------------------------
+   3. 吹き出しを押すと出る小窓
+   -------------------------------------------- */
+/* 位置は Scripts/admin-logs.js が、押した行のそばに決める（画面からはみ出さないように） */
+.logview-pop {
+    position: fixed;
+    z-index: 1000;
+    width: min(26rem, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+    .logview-pop[hidden] {
+        display: none;
+    }
+    .logview-pop:focus {
+        outline: none;
+    }
+
+.logview-pop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.logview-pop-title {
+    margin: 0;
+    font-size: 15px;
+}
+.logview-pop-close {
+    min-width: 36px;
+    min-height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    color: var(--color-text-sub);
+    font-size: 18px;
+    cursor: pointer;
+}
+    .logview-pop-close:hover {
+        background-color: var(--color-accent-bg);
+    }
+
+/* 項目名と値の2列（値は長くても折り返す。IP・ブラウザの印は等幅） */
+.logview-pop-list {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13px;
+}
+    .logview-pop-list dt {
+        color: var(--color-text-muted);
+        white-space: nowrap;
+    }
+    .logview-pop-list dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+    }
+    .logview-pop-list .is-code {
+        font-family: Consolas, Menlo, monospace;
+    }
+
+/* 小窓のいちばん下のリンク（右寄せ） */
+.logview-pop-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 14px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border-light);
+    font-size: 13px;
+}
+    .logview-pop-links button {
+        padding: 0;
+        border: none;
+        background: none;
+        color: var(--color-link);
+        font: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+    }

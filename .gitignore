@@ -1,0 +1,60 @@
+# ---- Visual Studio と組み立てで出るもの（作り直せる） ----
+.vs/
+*.suo
+*.user
+*.userosscache
+*.rsuser
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+*.log
+*.pdb
+*.tmp
+*.cache
+*.binlog
+publish/
+*.pubxml
+*.publishproj
+
+# NuGet の部品（Visual Studio の「NuGet パッケージの復元」で戻る）
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+
+# DB のファイル
+*.mdf
+*.ldf
+
+# ---- 秘密の設定（リポジトリに入れない。動かすときに各自で置く） ----
+# 接続文字列（Web.config が configSource で読む）
+connections.config
+# メールの送り方（Web.config の smtp が configSource で読む）
+/mail.config
+*.pfx
+
+# ---- アプリが動きながら作る・置くファイル ----
+# 鍵と合言葉（無ければアプリが作る。最初の管理人を作る合言葉だけは手で置く）
+/App_Data/trip-salt.txt
+/App_Data/room-password-key.txt
+/App_Data/name-token-key.txt
+/App_Data/account-auth-key.txt
+/App_Data/account-setup.txt
+/App_Data/account-recover.txt
+/App_Data/mail-test.txt
+/App_Data/help-anchors.txt
+/App_Data/private-images/
+# 利用者が上げた画像（置き場の web.config だけを入れる）
+/Uploads/images/*/
+/Uploads/articles/*/
+/Uploads/profiles/*/
+
+# ---- 再配布できない素材（利用者アイコンと効果音。素材は各自で用意する） ----
+IconSource/
+Content/icon-sprite.svg
+Content/sounds/
+Database/InsertData/IconMaster.sql
+
+node_modules/

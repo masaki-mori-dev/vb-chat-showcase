@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="ヒヨコが両方の羽を上げて伸びをしている「おはよう」のスタンプ">
+  <title>おはよう</title>
+
+  <g stroke="#F0A31E" stroke-width="5" stroke-linecap="round"><path d="M 201 12 L 201 22"/><path d="M 223 34 L 213 34"/><path d="M 179 34 L 189 34"/><path d="M 217 18 L 211 24"/><path d="M 185 18 L 191 24"/><path d="M 217 50 L 211 44"/><path d="M 185 50 L 191 44"/><path d="M 201 56 L 201 46"/></g>
+  <circle cx="201" cy="34" r="13" fill="#FFD24A" stroke="#F0A31E" stroke-width="4"/>
+  <g stroke="#E08A1E" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M 103 172 L 103 186"/>
+    <path d="M 103 186 L 93 193 M 103 186 L 103 195 M 103 186 L 113 193"/>
+    <path d="M 137 172 L 137 186"/>
+    <path d="M 137 186 L 127 193 M 137 186 L 137 195 M 137 186 L 147 193"/>
+  </g>
+  <ellipse cx="120" cy="146" rx="41" ry="32" fill="#FFD84D" stroke="#C98A10" stroke-width="6"/>
+  <ellipse cx="120" cy="153" rx="25" ry="20" fill="#FFF0B8"/>
+  <ellipse cx="58" cy="138" rx="23" ry="13" fill="#FFD84D" stroke="#C98A10" stroke-width="5" transform="rotate(74 81 138)"/>
+  <ellipse cx="182" cy="138" rx="23" ry="13" fill="#FFD84D" stroke="#C98A10" stroke-width="5" transform="rotate(-74 159 138)"/>
+  <g>
+    <g stroke="#C98A10" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M 110 48 q -6 -16 2 -24"/>
+      <path d="M 120 44 q -1 -18 1 -26"/>
+      <path d="M 130 48 q 6 -16 -2 -24"/>
+    </g>
+    <circle cx="120" cy="84" r="43" fill="#FFD84D" stroke="#C98A10" stroke-width="6"/>
+    <path d="M 94 76 q 9 8 18 0" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 128 76 q 9 8 18 0" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="86" cy="98" rx="11" ry="6" fill="#FF8FA8" opacity="0.7"/>
+    <ellipse cx="154" cy="98" rx="11" ry="6" fill="#FF8FA8" opacity="0.7"/>
+    <path d="M 105 96 Q 120 122 135 96 Z" fill="#7A3B3B" stroke="#C97C10" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 105 96 L 120 84 L 135 96 Z" fill="#F5A623" stroke="#C97C10" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+
+  <text x="120" y="222" text-anchor="middle"
+        font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif"
+        font-size="34" font-weight="bold"
+        fill="#8A5E08" stroke="#FFFFFF" stroke-width="7" paint-order="stroke fill">おはよう</text>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="ヒヨコが片方の羽を高く上げて振っている「またね」のスタンプ">
+  <title>またね</title>
+
+  <g stroke="#E08A1E" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M 103 172 L 103 186"/>
+    <path d="M 103 186 L 93 193 M 103 186 L 103 195 M 103 186 L 113 193"/>
+    <path d="M 137 172 L 137 186"/>
+    <path d="M 137 186 L 127 193 M 137 186 L 137 195 M 137 186 L 147 193"/>
+  </g>
+  <ellipse cx="120" cy="146" rx="41" ry="32" fill="#FFD84D" stroke="#C98A10" stroke-width="6"/>
+  <ellipse cx="120" cy="153" rx="25" ry="20" fill="#FFF0B8"/>
+  <ellipse cx="58" cy="138" rx="23" ry="13" fill="#FFD84D" stroke="#C98A10" stroke-width="5" transform="rotate(-22 81 138)"/>
+  <ellipse cx="182" cy="138" rx="23" ry="13" fill="#FFD84D" stroke="#C98A10" stroke-width="5" transform="rotate(-70 159 138)"/>
+  <path d="M 200 72 q 8 -8 16 -10" fill="none" stroke="#C98A10" stroke-width="4" stroke-linecap="round" opacity="0.65"/>
+  <path d="M 206 88 q 9 -5 17 -5" fill="none" stroke="#C98A10" stroke-width="4" stroke-linecap="round" opacity="0.65"/>
+  <g>
+    <g stroke="#C98A10" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M 110 48 q -6 -16 2 -24"/>
+      <path d="M 120 44 q -1 -18 1 -26"/>
+      <path d="M 130 48 q 6 -16 -2 -24"/>
+    </g>
+    <circle cx="120" cy="84" r="43" fill="#FFD84D" stroke="#C98A10" stroke-width="6"/>
+    <path d="M 94 81 q 9 -13 18 0" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 128 81 q 9 -13 18 0" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="86" cy="98" rx="11" ry="6" fill="#FF8FA8" opacity="0.7"/>
+    <ellipse cx="154" cy="98" rx="11" ry="6" fill="#FF8FA8" opacity="0.7"/>
+    <path d="M 120 90 L 132 98 L 120 107 L 108 98 Z" fill="#F5A623" stroke="#C97C10" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 109 98 L 131 98" stroke="#C97C10" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <text x="120" y="222" text-anchor="middle"
+        font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif"
+        font-size="34" font-weight="bold"
+        fill="#8A5E08" stroke="#FFFFFF" stroke-width="7" paint-order="stroke fill">またね</text>
+</svg>

@@ -1,0 +1,165 @@
+﻿/* ============================================
+   「?」の説明の小窓
+   ============================================ */
+
+/* 【Content/Site.css から、この1本へ切り出した】Site.Master と Chat/ChatRoom.aspx（部屋）の両方が読む。
+   使い方・markup の見本は Scripts/help.js の頭、文は Core/HelpTexts.vb の表。ここは見た目だけ。
+   【色は theme.css の変数】部屋も theme.css を読んでいる。
+
+   【1個目はラウンジのトリップの欄】要望：あらゆる場所に ? を付ける。
+   2個目からは markup を置くだけで、このCSSもJSも触らない形にしてある */
+
+/* ボタンと小窓を包む箱。**小窓はこの中の子**でなければならない
+   （マウスが小窓の上へ移っても閉じないのは、親子であることに乗っている。help.js の「閉じない理由」） */
+.help {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 「?」のボタン。**押せる範囲は 24px 角**（文字は小さいが、指でも押せる大きさにしてある） */
+.help-btn {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--color-text-sub);
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* 【:hover は必ずメディアクエリで囲む】囲まないと、スマホでタップした色が指を離しても戻らない
+   （「:hover は、必ずメディアクエリで囲む」の落とし穴） */
+@media (hover: hover) {
+    .help-btn:hover {
+        border-color: var(--color-accent);
+        background-color: var(--color-accent-bg);
+        color: var(--color-accent);
+    }
+}
+
+.help-btn[aria-expanded="true"] {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* 小窓そのもの
+
+   【position: fixed である】理由は help.js の place() のコメント
+   （ラウンジのプロフィールの枠は overflow: hidden の箱の中にあり、absolute だと切り落とされる）。
+   置き場所（left / top）は help.js が入れる。
+
+   【幅は画面に合わせて縮む】スマホでも、画面の外へはみ出さない
+   （横の位置も help.js が内側へ寄せる）
+
+   【文字の太さ・色・大きさを、ここで全部決める】小窓は見出し（h3）や表の見出しの中にも置く。
+   決めておかないと、外側の太字・色を受け継ぐ */
+.help-popover {
+    display: block;
+    position: fixed;
+    z-index: 1200;
+    width: max-content;
+    max-width: min(300px, calc(100vw - 24px));
+    box-sizing: border-box;
+
+    /* 【上の余白で、ボタンとのすき間を作る】
+       箱と箱の間を空ける（margin）と、マウスがそこを通ったときに「外へ出た」ことになって閉じる。
+       内側の余白なら、見た目のすき間があっても、ずっと小窓の上にいることになる */
+    padding: 14px 14px 12px;
+
+    background-color: var(--color-background-gray);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text);
+    font-weight: normal;
+    letter-spacing: normal;
+    text-align: left;
+    white-space: normal;
+}
+
+    /* 【display を書いたので、hidden を効かせるにはこれが要る】（「hidden を付けても消えない」の落とし穴） */
+    .help-popover[hidden] {
+        display: none;
+    }
+
+    /* 見出し（「トリップとは」）。
+       【段落は span（display: block）】小窓は見出し（h3）や <p> の中にも置くので、中に <p> を入れると HTML として正しくない。
+       Core/HelpTexts.vb は .help-popover-title と .help-popover-p の span で組み立てる。前からの <p> の形（markup に直接書いたもの）も、同じ見た目 */
+    .help-popover-title {
+        display: block;
+        margin: 0 0 6px;
+        font-size: 14px;
+        font-weight: bold;
+        color: var(--color-text-strong);
+    }
+
+    /* 本文。1文につき1つの <p>。**ひと息入るほうが読みやすい**
+       （確認のダイアログの文を段落に分けてあるのと、同じ考え方） */
+    .help-popover p,
+    .help-popover-p {
+        display: block;
+        margin: 0 0 6px;
+    }
+
+    .help-popover p:last-child,
+    .help-popover-p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* 「さらに詳しく」の行（Core/HelpTexts.vb が使い方の記事の見出しへつなぐ） */
+    /* 【右寄せ】（「ボタンと、枠・小窓のいちばん下のリンクは右寄せ」）。この1か所で、全部の「?」に効く */
+    .help-popover .help-popover-more {
+        margin-top: 10px;
+        font-size: 13px;
+        text-align: right;
+    }
+
+    /* 絵と文を並べる1行。絵は本物の部品（鍵の印・「管理人」の札・［ノック］など）を小さく出す。
+       【絵の幅をそろえる】4.5em の列に入れて、文の頭をそろえる（並んだ絵の幅がまちまちでも、読みやすいように）。
+       【押せない】絵の中の押下は help.js が止める。見た目でも押せそうに見せない（cursor） */
+    .help-popover .help-popover-fig {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .help-fig {
+        flex: 0 0 4.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 1.6em;
+        cursor: default;
+        pointer-events: none;
+    }
+
+        .help-fig .btn-enter {
+            padding: 1px 8px;
+            font-size: 12px;
+        }
+
+        .help-fig .room-lock-icon {
+            width: 1.1em;
+            height: 1.1em;
+            margin-right: 0;
+            color: var(--color-text);
+        }
+
+        .help-fig .room-count {
+            font-size: 13px;
+        }
+
+/* 見出しや項目名の「横」に置くときのすき間。文字のすぐ後ろに続ける */
+h3 > .help,
+.help-inline {
+    margin-left: 6px;
+    vertical-align: middle;
+}

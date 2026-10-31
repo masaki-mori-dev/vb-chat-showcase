@@ -1,0 +1,220 @@
+﻿<%@ Master Language="VB" AutoEventWireup="true" CodeBehind="Site.Master.vb" Inherits="vb_chat.SiteMaster" %>
+
+<!DOCTYPE html>
+<html lang="ja">
+<head runat="server">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%: Page.Title %></title>
+    <%-- Modernizr は置かない（外した）。
+
+         参照している箇所が、サイト内に1件も無かった。JS から Modernizr.* を呼ぶ行が0件、
+         CSS が当てにするクラス（.no-js など）も0件。それでいて 51KB の
+         Scripts/modernizr-2.8.3.js が、Site.Master を使う4ページ
+         （トップ・About・Contact・ラウンジ）に毎回配られていた。
+         同じ日に外した ScriptManager と、まったく同じ「使われていない配線」である。 --%>
+
+    <%-- 配色の定義元。Site.cssより先に読み込むこと（var()の参照先が先に必要なため）。
+         ChatRoom.aspxはSite.Masterを使わない独立ページのため、あちらにも同じ<link>がある。
+         片方だけ消すと、そのページの色がまとめて効かなくなる。
+
+         href は Asset()（＝common.AssetUrl）を通す。ファイルを直すと URL の ?v= が
+         自動で変わり、本番の30日キャッシュを確実に飛び越えられる。
+         【ルール】ここに <link> や <script> を足すときは、必ず Asset() を通すこと。
+         通し忘れたファイルは、直しても30日間、利用者に届かない --%>
+    <link href="<%: Asset("~/Content/theme.css") %>" rel="stylesheet" type="text/css" />
+    <link href="<%: Asset("~/Content/Site.css") %>" rel="stylesheet" type="text/css" />
+    <%-- 「?」の説明の小窓（Site.css から切り出した。部屋も同じファイルを読む） --%>
+    <link href="<%: Asset("~/Content/help.css") %>" rel="stylesheet" type="text/css" />
+    <link href="<%: Asset("~/favicon.ico") %>" rel="shortcut icon" type="image/x-icon" />
+</head>
+<body>
+    <form runat="server">
+
+        <%-- 【二重送信を防ぐ、使い捨ての目印】（仕組みは Core/FormOnce.vb）
+             画面を描くたびに、新しい目印が1つ入る。送信を受け付ける側（FormOnce.TryUse）は、同じ目印を1回しか受け付けない
+             ＝送ったあと、戻るボタンで戻ってもう一度押しても、2件目は入らない。
+             【runat="server" にしていない】ViewState に乗せると、ポストバックのたびに前の値へ戻ってしまう。
+             素の <input> なら、描くたびに新しい値になる。
+             【戻ってきたときは、Scripts/site.js の「11」が、前の目印を入れ直す】
+             （このサイトのアカウントの画面は no-store なので、戻ると画面を取り直し、放っておくと新しい目印が入る） --%>
+        <input type="hidden" name="<%: FormOnceFieldName %>" id="<%: FormOnceFieldName %>" value="<%: FormOnceToken %>" />
+
+        <%-- ScriptManager は置かない（外した）。
+
+             【なぜ外したのか】
+             このサイトは、ScriptManager が要る機能をひとつも使っていない。
+             UpdatePanel・asp:Timer・ScriptReference はいずれも 0 件。
+             PageMethods のプロキシは生成されていたが、呼んでいる箇所は無かった
+             （ラウンジも部屋も $.ajax に物理パスを直接書いて WebMethod を呼んでいる。
+               Friendly URL 経由だと PageMethods の自動 URL 生成が 404 になるため、
+               意図してそちらを避けてある）。
+
+             【外すと止まるもの（実測、非圧縮）】
+             Site.Master を使う全ページから、次の3本が消える。
+               MicrosoftAjax.js               99,269 B
+               MicrosoftAjaxWebForms.js       39,547 B
+               WebResource.axd（WebForms.js） 23,063 B
+                                        計   161,879 B（gzip で約 38KB）
+             後ろの2本は MicrosoftAjax.js が実行時に自分で読み込むため、
+             HTML を眺めるだけでは見えない。数えるならブラウザで数えること。
+
+             【罠】ScriptManager が無くても、Validator は動く。
+             非侵入型検証が要求する "jquery" の ScriptResourceMapping は、
+             このコントロールではなく NuGet パッケージが起動時に登録している。
+             そのパッケージ（AspNet.ScriptManager.jQuery）は jQuery を 3.4.1 に
+             固定するため、宿題4 と合わせて外す。管理画面で Validator を使う回には、
+             Application_Start で ScriptResourceMapping を自分で登録すること。
+             忘れるとそのページが 500 で止まる（例外に直し方が書いてあるので気づける）。
+
+             ChatRoom.aspx は元から ScriptManager を持たず、それで SignalR も
+             WebMethod も動いている（＝無くても足りることの、自サイト内の実例）。 --%>
+
+        <div class="page-wrapper">
+
+            <header>
+                <div class="site-title">
+                    <a runat="server" href="~/">
+                        <img src="<%: Asset("~/favicon.ico") %>" alt="ロゴ" width="24" height="24" />
+                        <%: SiteName %>
+                    </a>
+                </div>
+                <%-- 中身は文字の☰ではなく<span>3つ（線1本につき1つ）。文字だと端末や
+                     フォントで太さ・形が変わるため。詳しい理由はSite.cssの
+                     .hamburger-icon のコメントにある。
+                     読み上げる文字が無くなるので、aria-label で名前を与えている
+                     （☰は本来「易経の卦」の記号で、読み上げソフトには意味不明な
+                     記号として扱われるため、そもそも名前として不適切だった） --%>
+                <%-- 【一般の人向けのメニュー。管理人の画面では出さない】
+                     出すかどうかは SiteMaster.ShowPublicChrome が決める。
+                     管理人の画面（Accounts/AdminMaster.Master を使うページ）は、かわりに
+                     管理画面用のメニューを本文の上に出す。
+                     PlaceHolder の中身は、Visible = False のとき1バイトも書き出されない
+                     （hidden や display:none ではない＝読み上げソフトにも、キーボードにも出てこない） --%>
+                <asp:PlaceHolder ID="PublicNav" runat="server">
+                <button type="button" class="hamburger-icon" id="hamburgerBtn"
+                        aria-expanded="false" aria-label="メニュー">
+                    <span></span><span></span><span></span>
+                </button>
+                <nav class="main-nav" id="mainNav">
+                    <ul>
+                        <%-- 行き先は記事の「URL の名前」で決まる（howto・terms）。
+                             その名前の記事が公開されていなければ、行ごと出ない（Site.Master.vb の NavItemHtml）。
+                             「説明書（guide）」はやめて「使い方」にまとめた
+                             （指摘：「説明書」と「使い方」の違いが分からない。中身の違いを誰も決めていなかった） --%>
+                        <%-- 【並びは、この順】（開発者が決めた）
+                             使い方・利用規約・（アカウントの行）・お問い合わせ・このサイトについて。
+                             【アカウントの行は、ログインしているかで変わる】
+                             ログインしていなければ「ログイン／新規登録」、していれば「ブログ／管理画面／ログアウト」。
+                             **区切り線などは入れない**（：空いた行は気にせず、ふつうに並べるだけでよい）。
+                             【ハンバーガー（狭い画面のメニュー）も、この同じ ul を開くだけ】なので、並びは自動でそろう --%>
+                        <%= NavItemHtml("howto", "使い方") %>
+                        <%= NavItemHtml("terms", "利用規約") %>
+                        <%-- 【ログイン・新規登録・ブログ・管理画面・ログアウトは、もうここに無い】
+                             右上の角（下の AccountCornerHtml）へ移した。理由：ページのいちばん上にアカウントが出ていれば、
+                             ログインしていることが直感で分かる。Google などと同じ形 --%>
+                        <%-- 【お問い合わせは、記事ではない】
+                             上下の「使い方」「このサイトについて」は「その名前の記事が公開されていれば出る」形だが、
+                             こちらは本物のページなので、いつでも・全員に出す（ログインしていない人にも）。
+                             行き先は1区切りのURL（/contact）。置き場所は Contacts\ フォルダ
+                             （URLと同じ名前のフォルダを作ると 403 になる。App_Start/RouteConfig.vb） --%>
+                        <li><a href="/contact">お問い合わせ</a></li>
+                        <%-- 「このサイトについて」（/articles/kanrinin/about）。
+                             「使い方」「利用規約」と同じで、その名前（about）の記事が公開されていなければ、行ごと出ない --%>
+                        <%= NavItemHtml("about", "このサイトについて") %>
+                    </ul>
+                </nav>
+                </asp:PlaceHolder>
+                <%-- 【右上の角＝自分のアカウント】
+                     ログインしている … 自分のアイコン（PC は表示名も）。押すと小さなメニュー
+                                       （@ユーザー名・ブログ・管理画面・チャット履歴・設定・ログアウト）
+                     ログインしていない … 「ログイン」のボタン（広い画面では「新規登録」も）
+                     **一般の人の画面にも、管理人の画面にも出す**（PublicNav の外に置いてあるのは、そのため）。
+                     部屋（Chat/ChatRoom.aspx）は Site.Master を使わないので、出ない（開発者の判断：部屋には要らない）。
+                     組み立ては Site.Master.vb の AccountCornerHtml、開け閉めは Scripts/site.js の「12」。
+
+                     【markup の順＝読み上げの順】ロゴ →（メニュー）→ 右上の角 →（管理メニュー）→ 本文。
+                     狭い画面で ☰ のメニューを行の下へ回しているのは、CSS の order だけ（Content/Site.css の「右上の角」） --%>
+                <%= AccountCornerHtml() %>
+                <%-- 【管理人の画面が、管理メニューを差し込む場所】（右上の角のあとへ移した）
+                     Accounts/AdminMaster.Master が「管理メニュー（＋使っている量）」の行を入れる。
+                     **一般の人の画面では、中身が空なので1バイトも書き出されない**
+                     （開始タグと終了タグの間に空白も改行も置いていないのは、そのため。ヘッダーの見た目を1pxも変えない）。
+                     右上の角より後ろに置いたのは、管理メニューの行が「ロゴと右上の角の下の行」に来るため（読み上げの順と見た目の順がそろう） --%>
+                <asp:ContentPlaceHolder ID="HeaderExtra" runat="server"></asp:ContentPlaceHolder>
+            </header>
+
+            <%-- 【ヘッダーのすぐ後ろで読み込む】メニューが1行に入るかを測って、ハンバーガーにするかを決める。
+                 ページの終わり（site.js）で決めると、広い形のヘッダーが一瞬見えることがあるため。中身の説明は Scripts/header-fit.js --%>
+            <script src="<%: Asset("~/Scripts/header-fit.js") %>"></script>
+
+            <div class="content-layout">
+                <main class="main-content">
+                    <asp:ContentPlaceHolder ID="MainContent" runat="server">
+                    </asp:ContentPlaceHolder>
+                </main>
+
+                <%-- 右の枠（広告の場所と更新履歴）。狭い画面では本文の下に回る。
+                     管理人の画面では出さない（上の PublicNav と同じ SiteMaster.ShowPublicChrome） --%>
+                <asp:PlaceHolder ID="PublicSidebar" runat="server">
+                <aside class="right-sidebar">
+                    <div class="banner-area">
+                    </div>
+                    <%-- 【ブログのページでは、この枠の中身が丸ごと入れ替わる】（ブログ型への作り替えの③）
+                         入れ替えるのは Site.Master.vb の SidebarHtml で、
+                         中身は Articles/BlogSidebar.vb が組み立てる
+                         （プロフィールの簡易版 → その人の最新の記事 → カテゴリ → お知らせ）。
+                         **ここに直接書くのは「サイト全体のページ」のぶんだけ**にしてある --%>
+                    <asp:PlaceHolder ID="SiteSidebar" runat="server">
+                    <%-- 【管理人からのお知らせ】（ブログ型への作り替えの⑤）
+                         1つも無ければ、見出しごと出さない（Site.Master.vb の NoticeAreaHtml）。
+                         **「お知らせはありません」とは書かない**——無いのがふつうなので、場所を取らせない。
+                         【更新履歴より上】（G）サイト全体のページだけ。
+                         **ブログのページの右の枠は、今のまま**（プロフィール → 最新の記事 → カテゴリ → お知らせ） --%>
+                    <%= NoticeAreaHtml() %>
+                    <%-- 【新しいメンバー】登録を終えた人を新しい順に5人。押すとプロフィールへ。
+                         1人も居なければ、見出しごと出さない。中身と控えは Accounts/NewMembers.vb --%>
+                    <%= NewMembersHtml() %>
+                    <%-- 【更新履歴は、やめた】（お知らせと役目がかぶる・管理人の記事は右上のメニューから行ける）。
+                         右の枠は「お知らせ」→「新しいメンバー」の2つ。区切り線は、それぞれの欄の見出しが引く --%>
+                    </asp:PlaceHolder>
+                    <%-- ブログのページのぶんは、ここへ入る --%>
+                    <asp:PlaceHolder ID="BlogSidebar" runat="server" Visible="false"><asp:Literal ID="BlogSidebarHtml" runat="server" /></asp:PlaceHolder>
+                </aside>
+                </asp:PlaceHolder>
+            </div>
+
+            <footer>
+                <p>&copy; <%: DateTime.Now.Year %> <%: CopyrightName %></p>
+            </footer>
+
+        </div>
+
+        <%-- アイコンスプライトの置き場所。
+             JS（icon-sprite.js）が、この値を読んで取りに行く。
+
+             【必ず Asset（common.AssetUrl）を通すこと】
+             付く ?v= が無いと、管理画面でアイコンを足しても
+             本番の30日キャッシュに引っかかって、30日間ブラウザに届かない。
+
+             【<script> の中へ直接書かないこと】
+             属性値なら <%: %> が正しいエスケープになる。
+             <script> の中では HTML用のエスケープになってしまい、値が黙って壊れる（宿題7） --%>
+        <input type="hidden" id="iconSpriteUrl" value="<%: Asset("~/Content/icon-sprite.svg") %>" />
+
+        <script src="<%: Asset("~/Scripts/site.js") %>"></script>
+
+        <%-- 「?」の説明の小窓（site.js の「4」から切り出した。部屋も同じファイルを読む） --%>
+        <script src="<%: Asset("~/Scripts/help.js") %>"></script>
+
+        <%-- アイコンを1回だけ取ってきて、ページへ差し込む。
+             以前はサーバー側が86KBのSVGをHTMLへ貼り付けていた（毎回送っていた） --%>
+        <script src="<%: Asset("~/Scripts/icon-sprite.js") %>"></script>
+
+        <asp:ContentPlaceHolder ID="ScriptsContent" runat="server">
+        </asp:ContentPlaceHolder>
+
+    </form>
+</body>
+</html>

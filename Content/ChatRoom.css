@@ -1,0 +1,5046 @@
+﻿/* ============================================
+   ChatRoom.css
+   チャットルーム専用のスタイル
+   ============================================ */
+
+
+/* ============================================
+   0. ボタンの大きさ（部屋の中のボタン共通）
+
+   退室ボタンと送信ボタンで、高さ・左右の余白・文字サイズを揃えるための値。
+   基準は退室ボタン側に合わせている。
+
+   【重要】ここは「大きさ」だけを決める。
+   色・角の丸み・枠線の色といった見た目は、各ボタンのクラス側でそれぞれ指定すること
+   （ボタンごとにデザインは違ってよい。揃えたいのは大きさだけ）。
+
+   同じ数値を2か所に書くと、将来どちらかだけ変えられて、また揃わなくなる。
+   ボタンが増えたときも、この変数を使えば自動的に揃う
+   ============================================ */
+:root {
+    --chat-btn-padding: 6px 16px;
+    --chat-btn-font-size: 13px;
+    --chat-btn-border-width: 1px; /* 枠線の太さも揃える。
+                                     枠線の有無で、その分だけ高さがずれてしまうため。
+                                     枠線を見せたくないボタンは、太さはこのままにして
+                                     色をtransparentにすること（borderを消さない） */
+
+    /* 絵文字だけの発言（3個まで）を、何倍の大きさで出すか。
+
+       実機で見て調整する値なので、変数にしてある。
+       使っているのは .message-bubble--emoji-only の1か所だけなので、
+       ここを変えれば大きさだけが変わる（判定のしかたはJS側で、これとは関係ない）。
+
+       【実機を見て 2.6 → 3.0 に確定した】
+       初期値の2.6は机上で置いた値で、実機では小さかった */
+    --emoji-only-scale: 3.0;
+
+    /* 吹き出しの横に出る、発言者のアイコンの大きさ。
+
+       【実機で見て決める値なので、変数にしてある】
+       使っているのは .message-avatar の1か所だけ。
+       参加者一覧パネルの .participant-avatar（40px）とは別物なので、揃えなくてよい。
+
+       【小さくするぶんには、上限の理由（下の .message-sender のコメント）を壊さない】
+       もともと36pxから30pxへ下げたのは、「アイコン＋名前」のかたまりが
+       1行の吹き出しより高くなって、そちらが行の高さを決めてしまうのを避けるため。
+       さらに小さくしても、その心配は増えない。
+
+       【実機を見て 24px → 20px に確定した】
+       あわせて .message-sender の width: 56px（名前の折り返し幅）も実機で見たが、
+       **そのままでよい、という判断だった。触らないこと**
+       （→ 名前の欄の幅は、下の --message-sender-width へ移して広げた） */
+    --message-avatar-size: 20px;
+
+    /* 発言の行の、送信者の欄（アイコンの下に名前・トリップ・@ID）の幅。
+
+       【56px → 68px】（要望：なるべく全部出るようにする）
+       「テストユーザー２（仮）」が「テストユー／ザー２…」と2行で切れていた。
+       56px には 11px の全角が5文字しか入らず、**名前の上限12文字（NicknameMaxLength）が2行に収まらなかった**。
+       68px ＝ 全角6文字（11px × 6 ＝ 66px）＋ 2px の遊び。名前の側に line-break: anywhere を付けたので
+       （.message-nickname）、「（」で行を終えない・「）」で行を始めない、の決まりで1文字送られて3行目へ溢れることも無い
+       ＝**12文字までの名前は、どんな文字でも2行に全部入る**（開発機で測った）。
+
+       【広げたぶん、吹き出しと写真が 12px 狭くなる】相手の行だけ（自分の行に送信者の欄は無い）。
+       狭い画面の写真は max-width: min(上限, 100%) で縮むので、時刻が画面の外へ出ることは無い。
+       【トリップ・@ID のはみ出し】10桁（12px の等幅で約66〜72px）は、ほぼ欄の中に収まるようになった。
+       @ID の上限（.account-id.message-trip）は「この幅＋左右 8px」で、この変数から計算している */
+    --message-sender-width: 68px;
+
+    /* ---- 吹き出しの枠線と、しっぽ-------------------------
+
+       【実機で見て調整する値なので、変数にしてある】
+       「今の半分くらいに」といういったん 1.5px にしたが、
+       **実機で見て 2px に確定した**。
+
+       【小数にしてはいけない。実機で、実際に壊れた】
+       border-width は「実際の画面のドット」に切り下げられるため、
+       等倍（devicePixelRatio = 1）のPCでは **1.5px と書いても 1px で描かれる**
+       （2.5px なら 2px。1px・2px・3px は、どの画面でもそのまま出る）。
+       ところが **切り下げられるのは border-width だけで、left/bottom は小数のまま効く。**
+       そのためしっぽ側だけ計算がずれ、**本体の線は 1px なのに、しっぽは太いまま**になる
+       （実測＝しっぽの上辺 1.5px・斜辺 0.79px、下端が吹き出しより 0.5px 下がる）。
+
+       **等倍のPCの実機で、そのとおりに見えた。**＝
+       「本体の線が1pxに切り下げられている一方、しっぽ側は小数のまま効いていて、
+       しっぽだけ太く見える」。
+
+       **整数にすること。** 2px なら、どの画面でも計算どおりに出る。
+
+       【しっぽの線の太さは、別のつまみにしてある】
+       下の --bubble-tail-line-width。ここと連動させていない理由は、あちらのコメントに */
+    --bubble-border-width: 2px;
+    /* しっぽの線の太さ。**本体の枠線とは、わざと別のつまみにしてある**。
+
+       【なぜ連動させないのか。同じ数を入れても、同じ太さには出ないから】
+       CSSの border は「実際の画面のドット」へ切り下げて描かれるが、
+       **SVGの stroke は切り下げられない**（ぼかして、指定どおりの太さで描かれる）。
+       そのため拡大率が半端なとき、同じ2pxでもこうなる。
+
+         実効倍率 1.0 / 1.5 / 2.0 … 枠線 2 / 3 / 4 ドット、しっぽ 2 / 3 / 4 ドット（一致）
+         実効倍率 1.25            … 枠線 2 ドット、しっぽ 2.5 ドット（0.5 太い）
+         実効倍率 1.6             … 枠線 3 ドット、しっぽ 3.2 ドット（0.2 太い）
+
+       **ChromeOSは拡大率が1.25倍などの半端な値であることが多く、そこで「しっぽが明らかに太い」
+       と実機で指摘された**。少し細くしておけば、その差が埋まる。
+
+       【1.8px の根拠】等倍では 1.8 対 2（0.2 細い）、1.25倍では 2.25 対 2（0.25 太い）。
+       **どちらへ振れても 0.25ドット以内**に収まる値を選んだ。
+       ぴったり合う1つの値は無い（合わせる相手が、倍率によって動くため）。
+
+       【小数を書いてよい。ここは border ではない】
+       SVGの stroke は切り下げられないので、1.8px はそのまま 1.8px で出る。
+       **--bubble-border-width のほうは整数にすること**（あちらは切り下げられる）。
+
+       **実機で見て調整する値なので、ここ1行を変えれば済む形にしてある** */
+    --bubble-tail-line-width: 1.8px;
+
+    /* ---- 部屋名の右に並ぶボタン（人数▼・歯車）の押せる大きさ----
+
+       指摘：全体に小さく狭くて使いにくい。
+       それまで両方とも padding: 0 で、**絵の大きさがそのまま押せる範囲**だった
+       （人数ボタン 19px、歯車は 16×16）。指で押す当たりとしては小さすぎる。
+
+       【33px という数字は、実測から決まっている】
+       プロフィールバーの高さを増やさないことが条件。
+       バーの高さは「上下の余白 10px ＋ 中身のいちばん高いもの」で決まり、
+       中身のいちばん高いものは **退室ボタンの 33px**（自分のアイコンは 32px）。
+       つまり 33px までは、バーの高さが1pxも変わらない。
+       34px にした瞬間、バー全体が高くなる。**増やすときは、必ず測り直すこと** */
+    --room-info-btn-size: 33px;
+
+    /* ---- 発言に入れるものを選ぶボタン（😀 の跡地）の大きさ----
+
+       【この1つだけ、上の「0. ボタンの大きさ」の変数から外してある】
+       退室・送信は角の丸い長方形で、こちらは円。形が違うものを同じつまみで
+       動かすのは無理がある、という開発者の判断。
+       **送信ボタンと退室ボタンの大きさは、これまでどおり --chat-btn-* が持つ。**
+
+       44px は、指で押す的として広く推奨されている大きさ。
+       【入ることは実測済み】入力欄の高さ 93.5px に対して、
+       44 ＋ すき間 8 ＋ 送信ボタン 33 ＝ 85px。8.5px 余る（実測）。
+
+       中の笑顔の大きさは、ここから計算で出す（下の .insert-btn-icon）。
+       実機で調整するときに、この1行だけで両方が付いてくる */
+    --insert-btn-size: 44px;
+
+    /* パネルの中身（絵文字の面・スタンプの面）の高さ。**両方が、ここから取る。**
+
+       【固定にしてある理由・】
+       中身なりの高さだと、絵文字とスタンプを行き来するたびにパネルの高さが変わり、
+       **画面が跳ねる**（実機で開発者が指摘）。
+
+       346px は、それまでの絵文字パネルの中身の高さそのもの
+       （パネルの頭打ち420px − 上下の余白20 − 枠線2 − 閉じる行44 − すき間8）。
+       **つまりこの変更で、絵文字側の見た目は1pxも変わっていない。**
+
+       ここを変えるとパネル全体の高さも一緒に動く（.insert-panel は高さを持たず、
+       中身から決まる形にしてある）ので、**直すのはこの1行だけでよい** */
+    --insert-pane-height: 346px;
+
+    /* 画像の発言の、絵の幅の上限（Eの回）
+
+       【実機で見て決める値なので、変数にしてある】
+       部屋の中と、こっそりの窓とで、別々に持つ——窓は既定320pxしか無いので、
+       同じ大きさで出すと、絵だけで窓が埋まる。
+
+       【高さの上限も、ここに並べてある】（規則から移した）
+       「縦に長い画像で、行が画面いっぱいにならない」ためのもので、幅とは別の役目である。
+
+       【4つとも、JS が読んで寸法を計算する】（Scripts/chat-room.js の imageBoxOf）
+       元の比を保ったまま、この枠に収まる寸法を <img> の width / height 属性に入れる。
+       **CSS の max-height で高さを切ってはいけない**——幅は縮まずに高さだけ切られ、
+       縦長の画像がつぶれる（9:16 の画面写しが 3:4 で描かれていた） */
+    --message-image-max-width: 240px;
+    --message-image-max-height: 320px;
+    --private-image-max-width: 180px;
+    --private-image-max-height: 200px;
+
+    /* スタンプの絵の大きさ
+       ── **ここ1か所を変えれば、スタンプの大きさが全部変わる** ──
+
+       部屋のログ・こっそりの窓・一覧（パネルのグリッド）の3か所とも、ここから取る
+       （グリッドは、この 0.6 倍。パネル340pxに3〜4つ並ぶ大きさ）。
+
+       【大きさは常に固定】絵文字のように、個数で大きさを変えたりしない（開発者の指定）。
+       こっそりの窓が狭くて入りきらないときだけ、窓の幅まで縮む（はみ出さないため）。
+
+       【width / height 属性は書いていない】大きさがここで決まっているので、
+       絵が届く前から場所が確保され、画面は跳ねない（画像の発言と違い、寸法を印に持たない） */
+    --stamp-size: 120px;
+
+    /* 通知音がオフ（✕）のときの、スピーカーの絵の濃さ
+
+       【実機で見て決める値なので、ここ1か所にしてある】
+       指摘：灰色になっているが、もう少し薄くしないと変化が分からない。
+       「まだ濃い」なら数字を下げ、「行き過ぎた」なら上げる。
+       退室音の 0.7秒（LEAVE_WAIT_MAX_MS）や、絵文字だけの発言の倍率
+       （--emoji-only-scale）と同じやり方である。
+
+       バーの地（--color-background-dark）の上での見え方（色は --color-text-muted）
+
+         1.0  … 3.32:1（最初の版）
+         0.75 … 2.35:1
+         0.65 … 2.07:1
+         0.6  … 1.95:1 ← 今
+         0.55 … 1.83:1
+         0.45 … 1.62:1
+
+       【3:1の基準を割るのは、承知のうえ】（開発者の判断）
+       見分けの本体は形（音波 ⇔ ✕）なので、色は目安でしかない。
+       **ただし ✕ が読めなくなると「オフだと分かる印」そのものが消える。**
+       0.45 を下回ると線がかなり背景に溶けるので、そこより下げるときは実機で確かめること */
+    --sound-off-opacity: 0.6;
+}
+
+
+
+/* ============================================
+   0-2. ホバーの効かせ方（部屋の中のボタン共通）
+
+   ボタンの:hoverは、必ず次のメディアクエリで囲むこと。
+
+       @media (hover: hover) and (pointer: fine) { ... }
+
+   【なぜ必要か】
+   タッチ端末には「マウスを乗せている状態」が存在しない。そのため、タップした要素に
+   :hoverが当たったまま居座り、他の場所をタップするまで解除されない。
+   スマホで人数表示ボタンをタップすると、パネルを閉じたあとも文字色が青いまま
+   戻らなくなっていたのは、これが原因。
+
+   【条件式の意味】
+   - hover: hover  … ホバーできるポインタを持つ環境かどうか
+   - pointer: fine … マウスのように、細かい位置を指せるポインタかどうか
+   タッチのみの端末はどちらにも該当しないため、中の:hoverが適用されない。
+   結果として、タップしても色が残らなくなる。
+
+   【書き方の決まり】
+   このメディアクエリは、1か所にまとめず、各ボタンの:hoverをその場で囲むこと。
+   まとめてしまうと、どのボタンの指定なのかが分からなくなるため。
+
+   なお「押されている状態」を示したい場合は:hoverではなく、JS側が付け外しする
+   .is-activeクラスで色を変える（タッチでもマウスでも同じように動くため）
+   ============================================ */
+
+
+/* ============================================
+   1. 全体の背景（二重構造）
+   ============================================ */
+
+/* 一番外側：画面全体を覆う、薄い背景 */
+body {
+    background-color: var(--color-background); /* ThemeColorをうんと薄めた色 */
+    margin: 0;
+    padding: 0;
+}
+
+/* 【リンクは、押したあとも紫（訪問済みの色）にしない】（サイト全体の決まり）
+   Content/Site.css の同じ1行の写し（部屋は Site.css を読まないため）。**片方だけ直さないこと** */
+a {
+    color: var(--color-accent);
+}
+
+/* 内側：トップページの.page-wrapperと同じ色 */
+.chat-room {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* 古いブラウザ向けの保険として残す */
+    height: 100dvh; /* 対応してるブラウザでは、こっちが優先される */
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: var(--color-background-mid);
+}
+
+
+/* ============================================
+   2. 自分のプロフィール表示バー
+   ============================================ */
+
+
+.my-profile-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 部屋名（左）と、右側グループの間を自動的に空ける */
+    gap: 6px 10px; /* 行間6px・列間10px。2行になったときの行間を詰め、縦スペースの消費を抑える
+                      （横方向の間隔は、1行のときと同じ10pxのまま） */
+    padding: 10px 16px;
+    background-color: var(--color-background-dark);
+    flex-wrap: wrap; /* 幅が足りなくなったら自動で2行に折り返す
+                        （上の行＝部屋名＋人数表示、下の行＝アイコン＋名前＋退室ボタン）。
+                        以前はnowrapで、折り返せずに中身があふれて重なっていた */
+    width: 100%; /* 親要素（.chat-room）の横幅いっぱいに広げる */
+    box-sizing: border-box; /* paddingをwidth: 100%の内側に収め、右端へのはみ出しを防ぐ */
+}
+
+/* 部屋名と、その右の人数表示・歯車を、ひとまとめにする左側グループ。
+
+   【入りきらなくなったら、部屋名だけが上の段へ上がる・】
+
+       広いとき   [部屋名 (2/20)▼ ⚙]      [アイコン 名前 退室]
+       狭いとき   [部屋名          ]      [アイコン 名前 退室]
+                  [(2/20)▼ ⚙       ]
+
+   **左側だけが2段になり、右側は1行のまま横に並ぶ。**
+   こうすると部屋名が省略されずに済む。
+
+   【画面幅で線を引いていない】
+   メディアクエリで「◯px以下」と決め打つと、端末が増えるたびに数字を見直すことになる。
+   flex-wrap は「入るか入らないか」だけを見るので、**数字を1つも持たずに同じ形になる**
+   （：入りきらなくなったら上の行へ上がる形にする）。
+
+   【必ず .room-actions で包むこと】
+   包まずに折り返させると、**歯車だけが下の段へ落ちる**
+   （上＝部屋名＋人数▼、下＝歯車）。折り返しは要素1つずつで起きるため。
+
+   【flex-basis を 0 にしてあるのは、そのままにすること】
+   親（.my-profile-bar）も flex-wrap: wrap で、**折り返しは「縮める」より先に起きる。**
+   flex-basis: auto（＝中身の幅）に戻すと、狭い画面で**この箱ごと下の段へ落ち**、
+   右側のアイコン・名前・退室が別の行になる（上の図の形にならない）。
+   0 にしておけば親は折り返さず、余った幅いっぱいに広がったうえで、
+   足りない分を**この箱の中で**折り返して吸収する。
+
+   【min-width が「あきらめて、親ごと折り返す」線】
+   ボタン2つ（約105px）すら入らない幅まで来たら、無理をせず親に折り返させる。
+   min-content ＝ 折り返す箱では「いちばん幅を食う中身1つぶん」＝ .room-actions の幅。
+   **数字を書かずに済むので、ボタンの大きさを変えてもここは付いてくる。**
+   0 にすると、いちばん狭いところでボタンが箱からはみ出し、
+   **右側のアイコンや名前と重なる**（1.5px の回に実測で確認した） */
+.room-info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px; /* 行間4px・列間6px。2段になったときだけ、上下を詰める */
+    flex: 1 1 0;
+    min-width: min-content;
+}
+
+/* 人数表示（▼）と歯車を、ひとかたまりにする箱。
+   **この2つは、必ず同じ段に居ること**（上の .room-info のコメントを参照）。
+
+   【gap を持たせないこと・】
+   2つのボタンの間は 0 にしてある。指摘：少し空けすぎ。
+   **見た目の間隔は、これで 0 にはならない**——人数ボタンの右余白8px と
+   歯車の左余白5.5px が残るので、13.5px 空いて見える。
+   **その余白は削らないこと。あれは押せる範囲そのもの**で、
+   削ると同じ日に大きくしたぶんが戻ってしまう */
+.room-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    /* こっそりの未読の印（.private-unread-mark）が、この箱を基準に
+       すぐ下へぶら下がる。**基準を外すと、印が画面の左上へ飛ぶ** */
+    position: relative;
+}
+
+/* 部屋名。**上限の20文字（ChatRoomRules.RoomNameMaxLength）まで、省略せずに全部出す**。
+   要望：20文字は全部表示する。それまでは max-width: 120px ＋「…」で、
+   全角8文字ほどから切れていた（スマホで見つかった）。利用者が部屋名を付けられるようになったいま、
+   名前の後ろ半分が見えないと、どの部屋に居るのかが分からない。
+
+   【入りきらなければ、人数▼⚙ の横で折り返す】（開発機で測って決めた形）
+       広いとき   [あいうえおかきくけこさしすせそたちつてと (2/20)▼ 音 ⚙]   [アイコン 名前 退室]
+       狭いとき   [あいうえおかきくけこさしすせそ] [(2/20)▼ 音 ⚙]        ← 375px の実測
+                  [たちつてと                    ]
+                  [アイコン 名前 退室]
+   「部屋名だけを上の段へ上げる」（.room-info の形）のままだと、375px で全角20文字の部屋名が1段を丸ごと取り、
+   その下に人数▼⚙、さらに下に右側、の3段になった（バー 113px。部屋名の短い部屋は 92px）。
+   部屋名を人数▼⚙ の横で2行にすれば2段で済む（93px）。
+   ・flex: 1 1 7em … 部屋名の「ふつうの幅」を7文字ぶんとして並べる。入る限り人数▼⚙ と同じ段に置き、
+     余った幅まで広がって、それでも入らない文字は折り返す。**7文字ぶんすら残らない幅まで来たら、
+     人数▼⚙ のほうが下の段へ回る**（部屋名が1文字ずつ縦に並ぶ形にしない）
+   ・max-width: max-content … 名前より広くは広がらない。広がりすぎると、人数▼⚙ が部屋名から離れて右へ飛ぶ
+   ・min-width: 0 … 短い名前（「雑談１」）が 7em ぶん場所を取らないように（段の決め方も、短い名前は中身の幅で見る）
+   ・overflow-wrap: anywhere … 空白の無い長い英数字も途中で折る（無いと、はみ出して右側と重なる）。
+     break-word ではなく anywhere にしてあるのは、min-content を1文字ぶんにするため
+     （そうしないと .room-info の min-width: min-content が部屋名の長さになり、右側ごと下へ落ちる）
+   【max-width を数字に戻さないこと】戻すと、そこで「…」か、PC でも2行になる */
+.room-name {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--color-accent);
+    flex: 1 1 7em;
+    min-width: 0;
+    max-width: max-content;
+    overflow-wrap: anywhere;
+    line-height: 1.35; /* 2行になったときに行どうしが詰まりすぎないように */
+}
+
+/* 部屋名の右に続けて表示する、クリック可能な人数表示（現在人数/定員） */
+.participant-count-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+
+    /* 【押せる範囲は、変数から取ること】
+       高さを決め打ちにしているのは、文字の大きさを変えても押せる範囲が変わらないように
+       するため（padding で高さを作ると、フォント次第で上下してしまう）。
+       左右の 8px は、指が「(1/20)」の文字ぴったりを狙わなくて済むようにする余白 */
+    height: var(--room-info-btn-size);
+    padding: 0 8px;
+    margin: 0;
+
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--color-text-sub);
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    border-radius: 8px; /* キーボードで来たときの枠を、角丸にするため（歯車と揃えてある）。
+                           押されている状態は、これまでどおり文字色だけで示している */
+}
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」）。
+       タッチのみの端末では、タップしたあとも青いまま戻らなくなるため */
+    @media (hover: hover) and (pointer: fine) {
+        .participant-count-btn:hover {
+            color: var(--color-accent);
+        }
+    }
+
+    /* パネルを開いている間は、押されている状態だとわかるように色を変える
+       （JS側が is-active を付け外しする）。歯車ボタンと動きを揃えるため、
+       人数表示ボタンにも同じ指定を置いている */
+    .participant-count-btn.is-active {
+        color: var(--color-accent);
+    }
+
+/* 開閉状態を示す矢印（▼/▲）。「クリックで開閉できる」ことを一見してわかるようにする。
+   9px → 11px（「絵も大きく」という） */
+.participant-toggle-icon {
+    font-size: 11px;
+}
+
+/* 設定パネルを開閉する歯車ボタン。
+   人数表示のすぐ隣に並ぶため、見た目は.participant-count-btnに揃えている
+   （背景・枠線なしの、アイコンだけのボタン） */
+/* 通知音のボタン（スピーカー）は、歯車とまったく同じ形・同じ大きさにする。
+   隣に並ぶ2つが違う大きさだと、押せる範囲が揃わない */
+.settings-btn,
+.sound-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 正方形の箱の中央に、歯車を置く */
+    background: none;
+    border: none;
+
+    /* 押せる範囲は、人数ボタンと同じ変数から（理由は先頭の --room-info-btn-size） */
+    width: var(--room-info-btn-size);
+    height: var(--room-info-btn-size);
+    padding: 0;
+
+    /* 【実機を見て 0 にした】
+       一度は「人数ボタンとの間をはっきり空ける」として margin-left: 4px を足したが、
+       指摘：少し空けすぎ。**箱と箱のすき間は 0 でよい。**
+       それでも歯車の左余白5.5pxと人数ボタンの右余白8pxが残るので、13.5px 空いて見える */
+    margin: 0;
+
+    color: var(--color-text-sub);
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 8px; /* キーボードで来たときの枠を、角丸にするため（人数ボタンと揃えてある） */
+}
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .settings-btn:hover,
+        .sound-btn:hover {
+            color: var(--color-accent);
+        }
+    }
+
+    /* パネルを開いている間は、押されている状態だとわかるように色を変える
+       （JS側が is-active を付け外しする） */
+    .settings-btn.is-active {
+        color: var(--color-accent);
+    }
+
+/* 歯車のSVG。色はボタン側のcolorをcurrentColorで拾うため、ここでは指定しない
+   （サイズ指定はsvgタグではなく、外側に付けるのがこのプロジェクトの方針だが、
+   このアイコンは中身が固定で使い回しもしないため、svgに直接指定している） */
+.settings-icon {
+    /* 16px → 22px（「絵も大きく」という）。
+       箱（33px）に対して、上下左右に 5.5px ずつ余る大きさ */
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+/* ============================================
+   通知音のオン/オフ（歯車の左のスピーカー）
+
+   【オン／オフは、色ではなく形で見せる】（開発者の指定）
+   オン … 音波の出たスピーカー
+   オフ … ✕ の付いたスピーカー
+   タブに下線を足したのと同じ理由で、色の見分けがつきにくい人にも伝わる。
+   どちらの絵を出すかは aria-pressed ひとつで決まる（見た目と読み上げがずれない）
+   ============================================ */
+.sound-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+    .sound-btn[aria-pressed="true"] .sound-icon-off,
+    .sound-btn[aria-pressed="false"] .sound-icon-on {
+        display: none;
+    }
+
+    /* オフ（✕）のときは灰色にする。
+
+       【形はそのまま。色を「足す」】
+       見分けの本体は、これまでどおり形（音波 ⇔ ✕）である。色だけに頼らない。
+
+       【薄さの調整は、色ではなく先頭の --sound-off-opacity でする】
+       色は --color-text-muted（3.32:1）のまま、絵に透け具合を掛けて薄くしている。
+       実機を見た開発者の判断で、3:1の基準より薄くした。
+       調整の幅と、下げすぎたときの注意は --sound-off-opacity のコメントにある */
+    .sound-btn[aria-pressed="false"] {
+        color: var(--color-text-muted);
+    }
+
+        /* 薄さは先頭の --sound-off-opacity の1か所で決める（実機で調整する値）。
+           【絵にだけ掛ける】ボタンごと薄くすると、キーボードで来たときの枠まで薄くなる */
+        .sound-btn[aria-pressed="false"] .sound-icon {
+            opacity: var(--sound-off-opacity);
+        }
+
+    /* 上の灰色は :hover より後ろにあって勝ってしまうので、ホバーの青をもう一度書く
+       （マウスがある環境だけ。理由は「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .sound-btn[aria-pressed="false"]:hover {
+            color: var(--color-accent);
+        }
+    }
+
+/* アイコン・名前・退室ボタンをまとめる、右側の1グループ */
+.my-profile-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0; /* 子要素（ニックネーム）の省略表示を効かせるために必要 */
+    margin-left: auto; /* 2行に折り返したとき、このグループを右寄せにするための指定。
+                          親のjustify-content: space-betweenは、行にアイテムが1つしか
+                          無い状態では効かないため、余白を左側に寄せて押し出している。
+                          1行に収まっているときは、もともと右端にあるので影響しない */
+}
+
+.my-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+/* 名前と、その下の行のトリップをまとめる箱。
+   【min-width: 0 を外さないこと】これが無いと、中の名前の省略表示（ellipsis）が効かない
+   （.my-nickname の min-width: 0 と同じ理由。箱を1段挟んだので、箱にも要る） */
+.my-name-block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* 名前と、管理人の札の横並び。min-width: 0 は名前の省略表示のため（上の .my-name-block と同じ） */
+.my-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+/* 管理人の札。ラウンジの顔の札（Site.css の .owner-badge）と同じ見た目。
+   部屋は Site.css を読まないので写してある。**片方を変えたら、もう片方も直すこと** */
+.owner-badge {
+    flex: 0 0 auto;
+    display: inline-block;
+    padding: 0 4px;
+    border-radius: 999px;
+    background-color: var(--color-accent);
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+    /* display を書いた要素には hidden が効かない */
+    .owner-badge[hidden] {
+        display: none;
+    }
+
+/* 参加者一覧では、名前（とトリップ）の下の行 */
+.participant-owner-badge {
+    margin-top: 2px;
+}
+
+.my-nickname {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--color-text-strong);
+    min-width: 0; /* フレックスアイテムの既定min-width: autoを打ち消すための指定。
+                     autoのままだと「最小幅＝中身の文字列全体の幅」と解釈されてしまい、
+                     下でellipsisを指定していても縮まず、省略表示が効かない */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 過去ログの表示行数を選ぶセレクトボックス（設定パネルの中にある）
+   角丸は付けず、四角い形にしている */
+.log-count-select {
+    background-color: #FFFFFF;
+    color: var(--color-text-strong);
+    border: 1px solid var(--color-border-input);
+    border-radius: 0;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-family: inherit; /* selectはデフォルトでフォントが継承されないため必須 */
+    cursor: pointer;
+    margin: 0; /* ブラウザのデフォルト余白をリセット */
+    flex-shrink: 0; /* 幅が足りなくても、潰さずに折り返させる */
+}
+
+/* 大きさは、上の「0. ボタンの大きさ」の変数から取る（送信ボタンと揃えるため）。
+   色・角の丸みは、このボタン独自のもの */
+.leave-btn {
+    background-color: #FFFFFF;
+    color: var(--color-accent);
+    border: var(--chat-btn-border-width) solid var(--color-accent);
+    border-radius: 20px;
+    padding: var(--chat-btn-padding);
+    font-size: var(--chat-btn-font-size);
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s;
+    margin: 0; /* ブラウザのデフォルト余白をリセット */
+    flex-shrink: 0; /* ボタン自体が潰れないようにする */
+}
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」）。
+       タッチのみの端末では、タップしたあとも背景色が残ってしまうため */
+    @media (hover: hover) and (pointer: fine) {
+        .leave-btn:hover {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+
+/* ============================================
+   3. 接続状態バー（切断時に、プロフィールバーの下へ出す帯）
+   ============================================ */
+
+/* 既定では非表示。JS側が接続状態に応じてis-visibleを付け外しする */
+.connection-bar {
+    display: none;
+    align-items: center;
+    justify-content: center; /* 文字とボタンを、帯の中央にまとめる */
+    flex-wrap: wrap; /* 幅が足りない端末では、ボタンが次の行へ折り返す */
+    gap: 6px 10px; /* 折り返したときの行間だけ詰める（プロフィールバーと同じ考え方） */
+    padding: 8px 16px;
+    width: 100%;
+    box-sizing: border-box; /* paddingをwidth: 100%の内側に収める */
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+}
+
+    /* 表示状態。displayをflexに変えることで、上のレイアウト指定が効くようになる */
+    .connection-bar.is-visible {
+        display: flex;
+    }
+
+/* 再接続を試みている最中（まだ復帰する見込みがあるため、警告どまりの黄色系） */
+.connection-bar--warning {
+    background-color: var(--color-warn-bg);
+    color: var(--color-warn-text); /* 黄色の背景でも読めるよう、文字は濃い茶系にする */
+}
+
+/* 完全に切断された状態（利用者の操作が必要なため、はっきり目立つ赤系） */
+.connection-bar--error {
+    background-color: var(--color-error-bg);
+    color: #FFFFFF;
+}
+
+/* 帯の中のボタン。帯自体が目立つ色のため、ボタンは白地＋細い枠で控えめにする */
+.connection-bar-btn {
+    background-color: #FFFFFF;
+    color: var(--color-accent); /* サイト共通のテーマカラーに合わせる */
+    border: 1px solid #FFFFFF;
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    margin: 0; /* ブラウザのデフォルト余白をリセット */
+    flex-shrink: 0; /* ボタン自体が潰れないようにする */
+}
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .connection-bar-btn:hover {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+
+/* ============================================
+   4. チャットログ全体
+   ============================================ */
+
+/* チャットログと、参加者一覧パネルを重ねて表示するための土台 */
+.chat-log-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0; /* flexの子要素でoverflow-yを効かせるために必要 */
+}
+
+.chat-log {
+    height: 100%;
+    box-sizing: border-box;
+    overflow-y: auto;
+
+    /* 【この1行を消さないこと】ログの中の絶対配置のものの基準を、このログの枠にする
+
+       枠（overflow-y: auto）が切り取り、一緒にスクロールさせるのは、**位置の基準がこの枠か、その内側にあるもの**だけ。
+       この指定が無いと、行の中の position: absolute（読み上げ用の .visually-hidden など）は枠を飛び越えて
+       外の .chat-log-wrapper を基準にし、**枠に切られず、ログの中身の高さの位置に取り残される。**
+       .chat-room もはみ出しを切らないので、それがそのままページ全体の高さになる。
+
+       実際に起きた＝相手の発言の行のトリップの「トリップ 」（.visually-hidden）で、画面 721px のページが
+       4593px まで伸びていた。スマホでログの端から先へ送ると、余った動きがページへ流れ、
+       **部屋ごと上へ動いて、下に背景だけの帯が出た。** 見えない1pxなので、画面を見ても原因が分からない。
+
+       行ごと（.message-row など）に付けるのではなく枠に付けてあるのは、**これから行の中に何を足しても、まとめて受け止めるため。**
+       「新着あり」・パネル・こっそりの窓の層はこのログの子ではなく隣（.chat-log-wrapper の子）なので、基準は変わらない。
+       z-index は付けないこと（付けると重なりの段ができ、隣の z-index を持つものとの前後が変わりうる）。
+       こっそりの窓のログ（.private-talk-log）にも同じ理由で付けてある。
+       確かめ方＝document.documentElement.scrollHeight が画面の高さと同じか（トリップ付きの発言がある部屋で） */
+    position: relative;
+
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+
+    /* 行と行のすき間。
+
+       【実機を見て 10px に確定した】
+       14px →（半分にして）7px → **7pxは詰めすぎだったので、その中間の10pxへ**。
+       要望：前と今の間くらい。
+
+       【入退室のお知らせ行と、日付の区切り行にも同じだけ効く。それでよい】
+       ここだけ広く残すと、そこに不自然な間が空く。会話の流れの中に置く行なので、
+       発言どうしと同じ詰まり具合に揃えている */
+    gap: 10px;
+
+    /* 【パネルを部屋あてに開いている間は、下の余白がパネルのぶん伸びる】
+       --log-push は JS（InsertPanel.updateLogPush）が .chat-log-wrapper に入れる
+       「パネルがログに重なっている高さ」。余白を伸ばすと、いちばん下の発言が
+       パネルの上に来るところまでスクロールできる＝**ログが押し上げられる**。
+       ログの枠そのものの大きさは変えない（参加者一覧・こっそりの窓など、
+       枠に重なるものの位置を1つも動かさずに済む） */
+    padding-bottom: calc(16px + var(--log-push, 0px));
+
+    /* 【焦点の枠は、キーボードで来たときだけ出す】（変えた）
+       それまでは「Tab で来ることは無い（新着ありを押したあとの焦点の置き場なだけ）」として
+       outline: none にしていた。、**画面に見えているスタンプ・画像が無いときは、
+       ログの枠そのものが Tab で止まる場所になった**（LogKeyNav。↑↓でスクロールできる）。
+       Tab で来られる以上、枠を消すと焦点を見失う。下の :focus-visible で出す */
+    outline: none;
+}
+
+    .chat-log:focus-visible,
+    .private-talk-log:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+/* チャットログの上に覆いかぶさる形で開閉するパネル（参加者一覧・設定）
+   （チャットログ自体が--color-background-midのため、はっきり見分けられるよう、
+   プロフィールバーと同じ--color-background-darkを背景に使う）
+
+   パネルを増やすときは、下のセレクタへ1つ足すこと。
+   同じ見た目を2か所に書くと、片方だけ直されて食い違うため */
+.participant-panel,
+.settings-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: fit-content; /* 中身の量に応じて、パネルの高さが自動的に伸び縮みする */
+    max-height: 100%; /* チャットログの高さを超える分は、パネル内でスクロールさせる */
+    background-color: var(--color-background-dark);
+    overflow-y: auto;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+    /* 開いているパネルだけが表示される。
+       【必須】同時に開くことは無い（JS側の setOpenPanel が、1つだけを開く） */
+    .participant-panel.is-open,
+    .settings-panel.is-open {
+        display: block;
+    }
+
+/* 「新着あり」。過去ログを遡って読んでいる最中に新しい行が届いたときだけ出る。
+
+   【チャットログの中ではなく、上に浮かせている】
+   ログの中に入れると、行が増えるたびに位置が動いてしまう。
+   .chat-log-wrapper（position: relative）を基準に、下端の中央へ固定する。
+
+   パネルを開いている最中でも、このボタンが上に来て押せる。
+   **、DOMの順ではなく z-index（30）で決めるように変えた**——
+   こっそりの窓が入ってきて、順序だけでは足りなくなったため
+   （上の「重なり順の決め方」を参照）。
+
+   既定は display: none。JS側（showNewMessageBadge）が is-visible を付け外しする */
+.new-message-btn {
+    display: none;
+    position: absolute;
+
+    /* パネルを部屋あてに開いている間は、パネルの上へ持ち上げる
+       （--log-push は上の .chat-log と同じ値。0 のときは今までどおり 12px） */
+    bottom: calc(12px + var(--log-push, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+    gap: 6px;
+    background-color: var(--color-accent);
+    color: #FFFFFF;
+    border: var(--chat-btn-border-width) solid transparent; /* 枠線は見せないが、
+        他のボタンと高さの考え方を揃えるため、太さのぶんは確保しておく */
+    border-radius: 999px; /* 完全な角丸（錠剤の形）。ログの上に浮いていることを、形でも示す */
+    padding: var(--chat-btn-padding);
+    font-size: var(--chat-btn-font-size);
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(var(--color-accent-rgb), 0.35); /* 浮いて見せるための影 */
+    transition: background-color 0.2s;
+}
+
+    /* 出ている状態。flexにしているのは、文言と▼を横に並べて上下中央で揃えるため
+       （既定の display: none を上書きするので、この行は必須） */
+    .new-message-btn.is-visible {
+        display: inline-flex;
+    }
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .new-message-btn:hover {
+            background-color: var(--color-accent-dark);
+        }
+    }
+
+/* 下向きの矢印。文言のほうが主役なので、少しだけ小さくする。
+   読み上げソフトには読ませない（aria-hidden。マークアップ側で指定している） */
+.new-message-arrow {
+    font-size: 10px;
+    line-height: 1;
+}
+
+/* 3つのパネル（参加者一覧・設定・絵文字）に共通の、閉じるボタンの行。
+
+   【3つとも同じ見た目・同じ位置にすること】
+   要望：ほかのものにも付ける。年配の利用者にはそのほうが分かりやすい。
+   **閉じ方が3つとも同じなら、1回覚えれば全部に効く。**
+   「外を触ると閉じる」は、慣れている人には自明でも、そうでない人には見つけられない。
+
+   【中身に重ねず、1行を確保している理由】
+   右上へ絶対配置すると、参加者一覧では「非表示にする」ボタンと重なる。
+   3つで中の構造が違う（一覧＝ボタンの行／設定＝項目の並び／絵文字＝検索窓）ので、
+   重ねずに行を取るほうが、どのパネルでも同じ位置に出せる。
+
+   パネルを増やすときは、この行をそのまま先頭に1つ置くこと */
+.panel-close-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center; /* 追加。この行に閉じるボタン以外のもの
+                            （入れるものを選ぶパネルの、絵文字／スタンプのタブ）が
+                            並ぶようになったため。背の高いものと縦位置を揃える。
+                            **他の2つのパネルは中身が閉じるボタン1つだけなので、
+                            見た目は1pxも変わらない**（行の高さ＝そのボタンの高さのため） */
+    flex-shrink: 0; /* 入れるものを選ぶパネルは高さが決まっているので、ここが潰れないようにする */
+}
+
+/* 閉じるボタン本体。
+
+   【押せる範囲は40×40】ハンバーガーメニューと同じ大きさに揃えてある。
+   指で押す当たりとしてこれ以上小さくすると、押しづらくなる。
+   見えている「×」はもっと小さいが、押せる範囲は箱の全体である */
+.panel-close-btn {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0; /* 【必須】親が flex なので、これが無いと狭い画面で横に潰れる
+                       （実測：40px のはずが 22px になっていた）。
+                       押せる範囲は、狭い画面でこそ縮めてはいけない */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--color-text-sub);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s;
+}
+
+    /* マウスがある環境だけ（理由は上の「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .panel-close-btn:hover {
+            background-color: var(--color-background-mid);
+        }
+    }
+
+    /* キーボードで来たことが分かるようにする。
+       背景が無いボタンなので、これが無いと到達しても画面が何も変わらない */
+    .panel-close-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px; /* 内側へ寄せる。40pxの箱がパネルの端に接しているため、
+                                 外側へ出すとパネルからはみ出して切れる */
+    }
+
+/* 参加者一覧パネルの上部にある操作の行（「非表示にする」と「こっそり話す」）
+
+   ボタンが1つだった頃から flex ＋ gap にしてあったので、
+   「こっそり話す」を足すときに、この行は1文字も直さずに済んだ
+   （設定パネルを、項目1つのうちから「行を並べる」形にしたのと同じ考え方）。
+
+   【押せる条件は、2つとも同じ】誰かを選んでいて、それが自分でないこと。
+   決めているのは JS の updateIgnoreButton 1か所だけである
+
+   【まで、この注釈が閉じていなかった】（1行足したときに「*／」が落ちた）。
+   すぐ下の .participant-panel-actions の決まりが注釈の中に飲まれ、11日間まったく効いていなかった
+   （ボタンは既定の inline-block のまま並んで見えたので、誰も気づかなかった）。閉じたので、ボタンの下に 12px の間が戻る */
+.participant-panel-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* 押せないときの見た目。これが既定である。
+
+   大きさは、他のボタンと同じ変数から決める。
+   【罠】大きさに関わる数値を、ここへ直接書かないこと（2か所に書くと、いつか揃わなくなる） */
+.ignore-toggle-btn {
+    background-color: var(--color-background-mid);
+    color: var(--color-text-strong);
+    border: var(--chat-btn-border-width) solid var(--color-text-quiet);
+    border-radius: 6px;
+    padding: var(--chat-btn-padding);
+    font-size: var(--chat-btn-font-size);
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+    /* 押せるときは、送信ボタンと同じ「押せる見た目」にする
+       （テーマカラーの背景＋白文字＋太字）。
+
+       【なぜ、ここまで変えるのか】
+       以前は「押せる／押せない」の差が opacity 0.5 だけで、
+       **押せる状態になったことが伝わらなかった**。
+       このサイトで「押せるボタン」といえば送信ボタンの見た目なので、そこへ揃える。
+
+       【実測したコントラスト比】
+         白文字 × テーマカラー（#2563EB）      … 4.5:1 の基準に対して十分
+         テーマカラー × パネル背景（#C7D9F5）  … 3:1 の基準に対して十分
+        */
+    .ignore-toggle-btn:not(:disabled) {
+        background-color: var(--color-accent);
+        color: #FFFFFF;
+        border-color: var(--color-accent);
+        font-weight: bold;
+    }
+
+    /* 【必須】押せないことが、見た目で伝わるようにする。
+       背景色を明示したボタンは、disabled にしても見た目がまったく変わらない
+       （送信ボタンで同じ手当てをしてある）。
+
+       ここは開発者の判断で、今までのまま（控えめな見た目＋半透明）にしてある。
+       押せないボタンは、WCAG のコントラスト基準の対象外でもある */
+    .ignore-toggle-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .ignore-toggle-btn:not(:disabled):hover {
+            background-color: var(--color-accent-dark);
+            border-color: var(--color-accent-dark);
+        }
+    }
+
+/* === 管理人の道具（Chat/ChatRoom.aspx の #ownerTools） ===
+
+   参加者一覧の上、無視・こっそりの行の下。管理人の画面にだけ出す（hidden。display を書いたので [hidden] も書く）。
+   地の色は「部屋の設定」と同じ「管理人のもの」（theme.css の --color-owner-*）＝ここから下は管理人の話、と一目で分かる。
+   【見出しは無い】（決定：背景の色が違うだけでよい）。読み上げには role="group"＋aria-label で名前を残してある（ChatRoom.aspx）。
+   【無視・こっそりと同じボタンの形】（.ignore-toggle-btn）。押せる条件も同じ（選んでいて、自分ではない）。
+   【入室禁止だけ、形で重さを足す】（.owner-tool-btn--strong。押せるときは赤。取り返しのつかなさがいちばん重いため）。
+   色だけでなく、確認のダイアログでも伝える（色の見分けがつきにくい人のため） */
+.owner-tools {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-owner-bg);
+    box-shadow: inset 0 0 0 1px var(--color-owner-line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+}
+
+    .owner-tools[hidden] {
+        display: none;
+    }
+
+/* 狭い画面では3つが入りきらないので、折り返す */
+.owner-tools-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+    /* 入室禁止（押せるとき）。赤の地に白い文字（--color-error-text は白の上で 5.9:1 以上。白い文字もそのまま読める） */
+    .owner-tool-btn--strong:not(:disabled) {
+        background-color: var(--color-error-text);
+        border-color: var(--color-error-text);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .owner-tool-btn--strong:not(:disabled):hover {
+            background-color: var(--color-error-text);
+            border-color: var(--color-error-text);
+            filter: brightness(0.85);
+        }
+    }
+
+/* 断られた理由（aria-live）。
+   【:empty で display: none にしないこと】aria-live は隠れている要素の中では読まれない。
+   空のときは高さ0。間は、文字が入ったときだけ空ける（見出しを消したら、空の1行のぶんだけ下が広く見えたため） */
+.owner-tools-status {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--color-error-text);
+}
+
+    .owner-tools-status:not(:empty) {
+        margin-top: 6px;
+    }
+
+.participant-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap; /* 1行に収まりきらなくなったら、自動的に次の行へ折り返す */
+    gap: 16px;
+}
+
+/* アイコンの下に名前を置く、縦並びのレイアウト。1人あたりの幅は固定 */
+.participant-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 72px;
+}
+
+.participant-avatar {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.participant-nickname {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--color-text-strong);
+    max-width: 100%;
+    overflow-wrap: break-word; /* 幅は72px固定のまま、長い名前は折り返して全文表示する */
+    text-align: center;
+}
+
+/* 一覧の1人ぶんを、まるごと押せるボタンにしてある。
+   「一覧で相手を選ぶ → 上のボタンを押す」の1段目 */
+.participant-select-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    background: none;
+    border: 2px solid transparent; /* 選ばれたときに色を付ける。
+        透明でも枠を確保しておくのは、選んだ瞬間に大きさが変わらないようにするため */
+    border-radius: 8px;
+    padding: 4px 2px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+    /* キーボードで到達したことが分かるようにする。
+       :focus ではなく :focus-visible（マウスで押しただけで枠が出ると目障りなため。
+       通知音のトグルスイッチで同じ手当てをしてある） */
+    .participant-select-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+/* 選ばれている状態 */
+.participant-item--selected .participant-select-btn {
+    border-color: var(--color-accent);
+    background-color: var(--color-background);
+}
+
+/* 非表示にしている相手。
+
+   【一覧からは消さない】開発者の明示＝一覧には残す（居ることは分かる）。
+   そして、ここが**無視を解除する唯一の入口**でもある。
+
+   アイコンを薄くするだけにせず、下に文字も添えているのは、
+   薄さだけでは「非表示中」なのか「画像が読めていない」のか分からないため */
+.participant-item--ignored .participant-avatar,
+.participant-item--ignored .participant-nickname {
+    opacity: 0.4;
+}
+
+.participant-ignored-mark {
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--color-text-quiet);
+}
+
+
+/* 設定パネルの中身：「項目名 ＋ 操作するもの」の行を、縦に並べる
+   （項目を増やすときは、.settings-item をもう1つ足すだけでよい） */
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 設定1項目ぶんの行。項目名のすぐ隣に、操作するものを置く
+   （両端揃え（justify-content: space-between）は使わない。
+   パネルの幅いっぱいに引き離されて、項目名と操作するものが無関係に見えるため） */
+.settings-item {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 項目名と、操作するものの間の余白 */
+    flex-wrap: wrap; /* 画面が狭く、項目名と操作するものが1行に収まらないときは折り返す */
+}
+
+/* 項目名。最小幅を持たせたうえで、左揃えにしている
+
+   【なぜ最小幅を持たせるのか】
+   単に左詰めにすると、項目名の文字数の違いが、そのまま操作するものの位置のズレになる
+   （「ログ表示数」と「通知音」では文字数が違う）。
+   最小幅を決めておけば、項目名の隣に置きつつ、操作するものの左端は縦に揃う。
+   項目を増やしたときに、勝手に揃うようにするための指定 */
+.settings-item-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--color-text-strong);
+    min-width: 6em; /* 項目名6文字ぶん。これより長い項目名を足すときは、ここを広げる */
+    flex-shrink: 0; /* 幅が足りなくても項目名は潰さず、折り返しに任せる */
+}
+
+/* トグルスイッチ（チェックボックスを、見た目だけスイッチ風に変える）
+
+   【重要】これは Content/Site.css にあるものと、まったく同じ内容の写しである。
+   このページ（Chat/ChatRoom.aspx）は Site.Master を使わない独立ページで、
+   Site.css を読み込んでいないため、共通化がページをまたげない
+   （setCookie / getCookie が2つのページに同じ形で書かれているのと、同じ事情）。
+   【罠】片方だけ直さないこと。見た目が揃わなくなる。
+
+   全体の幅を変えたい場合は、下の3つの数値のバランスを保ちながら調整する：
+   ①.toggle-switchのwidth（枠全体の幅）
+   ②.toggle-slider::beforeのwidth（つまみの大きさ）
+   ③.toggle-switch input:checked + .toggle-slider::beforeのtranslateX（つまみの移動距離）
+   目安：①の幅から、つまみの左右の余白（3px×2）とつまみ自体の幅を引いた分が、移動距離になる */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 64px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-toggle-off);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+    .toggle-slider::before {
+        content: "";
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #FFFFFF;
+        border-radius: 50%;
+        transition: transform 0.2s;
+    }
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--color-accent);
+}
+
+    .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(36px);
+    }
+
+/* キーボードで到達したことが、見た目で分かるようにする
+
+   【なぜ要るのか】
+   .toggle-switch input は opacity: 0 / width: 0 / height: 0 で完全に消してある。
+   ブラウザが既定で描く枠も一緒に消えるため、Tabキーで到達しても
+   画面が何ひとつ変わらない。マウスを使わない人には、
+   「今どこにいるのか」が分からなくなる。
+
+   【:focus ではなく :focus-visible にしている理由】
+   :focus にすると、マウスでクリックしただけで枠が出て、目障りになる。
+   :focus-visible は「キーボードなどで到達したとき」だけ真になる。
+
+   【outline-offset を空けてあるのは、色が重なるのを避けるため】
+   オンのときスライダー自体がテーマカラーになるので、隙間を空けずに
+   同じ色の枠を描くと見えなくなる。2px空けると、枠の隣は必ずパネルの背景になる。
+   テーマカラー(#2563EB)と、部屋のパネル背景(#C7D9F5)で 3.62:1、
+   ラウンジの背景(#F7F7F7)で 4.8:1 あり、どちらも基準(3:1)を満たす */
+.toggle-switch input:focus-visible + .toggle-slider {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+
+/* ============================================
+   5. 吹き出し（共通部分）
+
+   1行の並びは、時刻・吹き出し・送信者（アイコンの下に名前）の横並び。
+
+       自分の発言（右寄せ）      [時刻]  [吹き出し]  [アイコン]
+                                                     [名前]
+
+       相手の発言（左寄せ）      [アイコン]  [吹き出し]  [時刻]
+                                 [名前]
+
+   以前は吹き出しの下に、名前と時刻のための行（.message-meta）を1段置いていた。
+   その1段ぶん（実測で約27px）を無くすため、名前と時刻を吹き出しの横へ移している
+   （1行の発言：約74.5px → 約47.3px）。
+   .message-content（吹き出しとmetaを縦に積むための入れ物）も、積むものが
+   無くなったため削除した。max-width: 75% は .message-bubble へ移してある
+   ============================================ */
+
+.message-row {
+    display: flex;
+
+    /* 【下端揃えから中央揃えへ変えた】
+       しっぽが吹き出しの下端から**縦の真ん中**へ移ったため。
+       下端揃えのままだと、行数の多い発言で**しっぽが宙を指す**
+       （アイコンは下、しっぽは真ん中、で向かい合わなくなる）。
+       **行の高さは変わらない**——揃え方は、行の中での置き場所を決めるだけで、
+       行の高さは「いちばん高い中身」で決まるため（実測で確認済み） */
+    align-items: center;
+
+    /* アイコン・吹き出し・時刻の、横のすき間。
+       実機を見て 8px → 12px（要望：名前と吹き出しの間を
+       もう少し空ける）。
+
+       【.message-sender の width: 56px を狭めて間を作ろうとしないこと】
+       あれは名前の折り返し幅で、狭めると長い名前が2行になりやすくなり、
+       **行の高さが伸びる**（縦を詰めたい方向と逆になる）。
+       実機を見て「そのままでよい」と決まっている */
+    gap: 12px;
+}
+
+/* 送信者（アイコンが上、名前が下の縦並び）
+
+   【アイコンの大きさに、上限がある理由】
+   36pxだと「アイコン＋名前」のかたまりが1行の吹き出し（約47px）より高くなり、
+   そちらが行の高さを決めてしまう。小さくすると、吹き出しの高さが行の高さになり、
+   横並びにした意味（縦幅の節約）が効く。
+   36px→30pxとし、**実機を見て24pxへ下げた**
+   （絵文字だけの行に限らず、すべての発言で小さくする）。
+   大きさは --message-avatar-size が持つ。小さくするぶんには、上の理由は壊れない。
+   参加者一覧パネルの .participant-avatar（40px）とは別物なので、揃えなくてよい */
+.message-sender {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: var(--message-sender-width); /* 名前の折り返し幅。ここを広げると、吹き出しの使える幅が減る。
+                    アイコンを小さくしたが、ここは触っていない。
+                    名前が入る幅であって、アイコンの幅ではないため
+                    （実機を見てから決める、という開発者の判断）。
+                    56px → 68px（:root の --message-sender-width のコメント） */
+    flex-shrink: 0;
+}
+
+    /* 部屋のログの相手（名前・アイコン・トリップ）は、押すと入力欄に「〇〇：」が入る
+       （Scripts/chat-room.js の ReplyAddress）。
+       押せることを指の形で伝える。こっそりの窓の中は宛先が自明なので対象外
+       （窓は .chat-log の外にあるので、このセレクタに当たらない）。
+       div のままにしてあるのは、Tab で止まらせないため（理由は JS 側） */
+    .chat-log .message-sender {
+        cursor: pointer;
+    }
+
+    /* 【:hover は必ずこの形で囲む】タッチ端末で下線が残らないように */
+    @media (hover: hover) and (pointer: fine) {
+        .chat-log .message-sender:hover .message-nickname {
+            text-decoration: underline;
+        }
+    }
+
+.message-avatar {
+    width: var(--message-avatar-size);
+    height: var(--message-avatar-size);
+    flex-shrink: 0;
+}
+
+.message-bubble {
+    position: relative;
+    max-width: 75%; /* もとは .message-content に付いていた指定。
+                       入れ物を無くしたため、吹き出し自身へ移した */
+    box-sizing: border-box; /* 上のmax-widthを、枠線と余白を含めた幅として数えるための指定。
+                               入れ物に付いていたときは、その内側に枠線と余白が収まっていた。
+                               これが無いと、吹き出しが以前より34px（余白28＋枠線6）広くなる */
+    background-color: #FFFFFF;
+    color: var(--color-text-strong);
+    border-radius: 16px;
+    padding: 10px 14px;
+    font-size: 15px;
+    line-height: 1.5;
+    border-width: var(--bubble-border-width); /* 太さは変数から。しっぽの数値もここから計算される
+                                                 （理由は先頭の「0. ボタンの大きさ」の下の節） */
+    border-style: solid;
+    white-space: pre-wrap; /* 発言に含まれる改行を、そのまま表示するために必要。
+                              HTMLは既定で改行文字をただの空白として扱うため、
+                              この指定が無いと改行が消えてスペースに潰れてしまう。
+                              pre（改行そのまま）ではなくpre-wrapにしているのは、
+                              長い行を吹き出しの幅で折り返したいため */
+    overflow-wrap: break-word; /* 区切りの無い長い文字列（英数字の羅列など）が来ても、
+                                  吹き出しからはみ出さずに途中で折り返す */
+}
+
+/* ============================================
+   発言の中のリンク（オートリンク）
+   ============================================
+
+   部屋の吹き出しにも、こっそりの窓の中にも、同じクラスで出る。
+   組み立てているのは Scripts/chat-room.js の buildLinkHtml。
+
+   【色は theme.css の --color-link】
+   こっそりの窓の中は地が暗いので、theme.css の .private-talk-layer が
+   明るい青へ差し替える。**ここに色コードを書かないこと**
+
+   【長い URL は、必ず折り返す】
+   吹き出しの overflow-wrap: break-word は「区切りの無い長い語」を折るが、
+   URL は「/」や「-」を区切りとみなすので、**そこで折れずに1行のまま伸びることがある**。
+   anywhere にして、どこでも折れるようにしてある */
+.message-link {
+    color: var(--color-link);
+    text-decoration: underline;
+    overflow-wrap: anywhere;
+}
+
+    /* 【:hover はメディアクエリで囲む】タッチ端末で、押した見た目が戻らなくなるため */
+    @media (hover: hover) and (pointer: fine) {
+
+        .message-link:hover {
+            color: var(--color-link-hover);
+        }
+    }
+
+    /* キーボードで移ってきたときだけ、はっきり分かる枠を出す */
+    .message-link:focus-visible {
+        outline: 2px solid var(--color-link);
+        outline-offset: 2px;
+    }
+
+/* 絵文字だけの発言（3個まで）は、大きくして、吹き出しを消す。
+
+   【吹き出しを消す判断は、実機を見て決まった】
+   当初は「vb-chatは吹き出しの縁の色で発言者を示すので、消すと誰の発言か
+   分からなくなる」として残していた。**実機で見た開発者の判断で覆った**——
+   LINEと同じで絵文字だけが浮く形にする。
+   **縁の色は消えるが、アイコンが横に残るので識別は付く。**
+
+   判定はJS側（countEmojiOnlyMessage）。**書記素の単位で数えている**ので、
+   👨‍👩‍👧 のような結合絵文字も1個として扱われる
+   （文字数制限のほうはUTF-16単位。わざと揃えていない。理由はJS側のコメントに書いた）。
+
+   【倍率は変数にしてある】実機で見て調整するため。
+   ここ1か所を変えれば、大きさだけが変わる */
+.message-bubble--emoji-only {
+    font-size: calc(15px * var(--emoji-only-scale)); /* 15px は .message-bubble の文字サイズ */
+    line-height: 1.2; /* 1.5 のままだと、大きくしたぶん行間が開きすぎる */
+}
+
+/* 吹き出しを外す発言（絵文字だけ・画像・スタンプ）。**外し方は、この1か所だけ。**
+
+   【画像とスタンプも、外している】
+   画像は、それまで「縁の色が誰の発言かを示す」として吹き出しを残していた。
+   開発者の指定で、スタンプと揃えて外した（LINEと同じで、絵だけが浮く形）。
+   **縁の色は消えるが、アイコンと名前が横に残るので識別は付く**（絵文字だけの発言と同じ判断）。
+   左右の寄せ・アイコン・名前・時刻は、今までどおり .message-row が並べる */
+.message-bubble--emoji-only,
+.message-bubble--image,
+.message-bubble--stamp {
+    background-color: transparent;
+    padding: 0;
+
+    /* 【!important が要る】枠線の色は、JS側がインラインstyleで発言者の色を入れている
+       （border-color: #xxxxxx）。インラインのほうが強いので、!important でないと消えない。
+       この画面で !important を使っているのは、ここだけである。
+
+       border-width は --bubble-border-width のまま残す（消さない）。
+       0にすると、その太さのぶんだけ吹き出しの位置が横へずれる */
+    border-color: transparent !important;
+}
+
+    /* 【必須】しっぽも一緒に消す。
+
+       消し忘れると、**背景が無いのに、しっぽだけが浮く。**
+       しっぽをSVG（.message-tail）へ作り替えたので、
+       消す先は1つになった（それまでは ::before / ::after が
+       相手・自分で4つあり、消し漏らしやすかった） */
+    .message-bubble--emoji-only .message-tail,
+    .message-bubble--image .message-tail,
+    .message-bubble--stamp .message-tail {
+        display: none;
+    }
+
+
+/* 送信者の名前。幅は .message-sender の欄の幅（--message-sender-width。56px → 68px）で、はみ出す名前は折り返す。
+
+   【なぜ2行で打ち切るのか】
+   無制限に折り返すと、名前が長い人の行だけが縦に大きく伸びて、
+   「1行あたりの縦幅を節約する」というこの並びの目的そのものが崩れるため。
+   省略されても全文が分かるよう、JS側が title 属性に名前を入れている */
+.message-nickname {
+    width: 100%;
+    margin-top: 2px; /* アイコンとの間の余白。これ以上空けると、吹き出しより高くなる */
+    font-size: 11px;
+    line-height: 1.2; /* 詰め気味にしている。名前が1行で収まるうちは、行の高さは
+                         吹き出し（約47px）のままで、名前は高さに影響しない。
+                         2行になったときだけ、行が約58pxまで伸びる */
+    color: var(--color-text-sub);
+    text-align: center;
+    overflow-wrap: break-word; /* 区切りの無い長い名前でも、欄の幅の中で折り返す */
+    /* 【行の決まり（禁則）で文字を送らない】
+       既定のままだと「（」で行を終えない・「）」で行を始めないために1文字次の行へ送られ、
+       12文字の名前でも3行目に溢れて「…」で切れることがある。名前は短い言葉なので、どこで割っても読める */
+    line-break: anywhere;
+    display: -webkit-box; /* -webkit-line-clamp（行数での打ち切り）に必要な組み合わせ。
+                             ベンダー接頭辞付きだが、主要ブラウザすべてが対応している */
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; /* 接頭辞なしの正式版。対応済みのブラウザはこちらを見る */
+    overflow: hidden; /* これが無いと、打ち切られずにそのまま全部表示される */
+}
+
+.message-timestamp {
+    font-size: 11px;
+    color: var(--color-text-faint);
+    white-space: nowrap; /* "00:00" が途中で折り返さないようにする */
+    flex-shrink: 0;
+}
+
+
+/* ============================================
+   トリップ（名前の下の行に出す、16進10桁の印）
+
+   【名前と「位置・書体・色」で分ける】開発者が決めた形。
+   名前の文字列はこちらが決めた色・書体・置き場所でしか出ないので、
+   名前と違う色（トリップ自身から決まる）・等幅の書体・名前の下の行で出せば、
+   **名前欄に何を打っても真似できない**（角括弧の飾りは、名前欄に打てば作れるので却下された）。
+
+   【色はここでは決めない】1桁目で8色に振る対応表は Content/theme.css の末尾にある
+   （ラウンジも同じ表を読むので、両方が読む theme.css に1つだけ置いてある）。
+
+   【書体と大きさは、ラウンジ（Content/Site.css の .trip-code）と同じにしてある】
+   部屋は Site.css を読まないので、写しになっている。片方だけ直さないこと
+
+   【出す場所】相手の発言の行（.message-trip）・参加者一覧（.participant-trip）・
+   自分のプロフィールバー（.my-trip）・こっそりの窓の見出し（.private-talk-head-trip）の4か所
+   （理由は Scripts/chat-room.js の buildTripHtml の上）
+   ============================================ */
+
+.trip-code {
+    /* 等幅。Windows は Consolas、Android は Droid Sans Mono、Mac は Menlo に落ちる */
+    font-family: Consolas, "Droid Sans Mono", Menlo, "Courier New", monospace;
+
+    /* 【10px から 12px へ上げた】
+       実機で2台とも小さすぎた（指摘：小さすぎて見にくい）。
+       年配の人が来る前提のサイトなので、好みではなく設計の問題として直した。
+       **発言の行の名前（11px）より大きくなるが、それでよい**——名前より控えめに見せるのは、
+       大きさではなく「等幅の書体・色・名前の下という置き場所・太くしない」で保つ。
+
+       【12px が、今の置き場所で出せる上限】発言の行の送信者の欄は56px（68px へ広げた＝今は少し余裕がある）。
+       10桁の等幅は、12px で Windows（Consolas）約66px、Android・ChromeOS（Droid Sans Mono・
+       Cousine）約72px になり、左右に5〜8pxずつはみ出す。はみ出しは吹き出しとのすき間（12px）の
+       中に収まるが、13px だとすき間を食い切る。これ以上大きくするなら、送信者の欄（56px）を
+       広げる（＝全部の行で吹き出しが狭くなる）判断が要る
+
+       【色が薄く見える件は、まだ触っていない】小さい文字は細く描かれて薄く見えるので、
+       大きくするだけで直るかもしれない。1回で両方変えると、どちらが効いたか分からなくなるため、
+       色は実機を見てから */
+    font-size: 12px;
+    font-weight: normal; /* 名前は太字の場所がある。トリップは太くしない（名前が主役） */
+    line-height: 1.2;
+    white-space: nowrap; /* 10桁は途中で折り返さない */
+}
+
+    /* display を指定したときの用心（hidden 属性はブラウザ既定の弱い指定なので、
+       display を書いた要素には効かない。落とし穴） */
+    .trip-code[hidden] {
+        display: none;
+    }
+
+/* 相手の発言の行。名前の下の行
+   【幅は .message-sender の欄のまま】10桁は、12pxの等幅でおよそ66〜72px（欄を 68px へ広げたので、はみ出しは0〜2px）。
+   左右に5〜8pxずつはみ出すが、中央揃えなので両側に均等に出て、
+   吹き出しとのすき間（12px）の中に収まる（しっぽは行の縦の真ん中、トリップは送信者の欄の
+   いちばん下なので、上下でも重ならない）。56pxを広げると、全部の行で吹き出しが狭くなる */
+.message-trip {
+    margin-top: 1px;
+}
+
+/* 参加者一覧。名前の下の行（1人ぶんの幅72pxには、そのまま収まる） */
+.participant-trip {
+    max-width: none;
+}
+
+    /* 非表示にしている相手は、名前と同じだけ薄くする（名前だけ薄いと、トリップだけ目立つ） */
+    .participant-item--ignored .participant-trip {
+        opacity: 0.4;
+    }
+
+/* 自分のプロフィールバー。名前の下の行 */
+.my-trip {
+    margin-top: 1px;
+}
+
+/* ============================================
+   アカウントID（名前の下の「@ユーザー名」。チャットとアカウントの紐づけ）
+   ============================================
+   ログインしている人が「アカウントID を表示する」で入ると、**トリップと同じ場所**（名前の下の行）に出る。
+   トリップとは、どちらか一方（決めるのはサーバー。Chat/ChatAccountLink.vb）。
+
+   【見せ方の案】（開発者が実機で見て決める。変えるときは、ここと theme.css の --color-account-id）
+     ・形は「@ユーザー名」… 見ただけで「アカウントの名前」と分かる、いちばん通じている書き方
+     ・色はリンクの青の濃いほう（--color-account-id）… **押せる**ことが色で伝わる。トリップの16色のどれとも違う
+     ・書体はふつうの書体・少し太め … トリップ（等幅・細い）と見分けがつく。アカウントは「身元のはっきりした印」なので、トリップより少しだけ強く
+     ・大きさはトリップと同じ 12px … 名前より目立たせない（名前が主役）
+   【名前欄では真似できない】名前の「下の行」に、この色で出る本物のリンクなので、名前に「@taro」と打っても同じ形にならない。
+
+   【長いユーザー名は「…」で切る】ユーザー名は30文字まで入る。トリップは必ず10桁だが、こちらは長さが決まっていない。
+   切れた先は、押せば公開のプロフィールで読める（title にも全部入っている）。
+   幅の上限は、置き場所ごとに下で決める（発言の行・参加者一覧は 72px＝トリップの10桁が取っていた幅と同じ）。
+
+   【ラウンジ（Content/Site.css の .account-id）と同じにしてある】部屋は Site.css を読まないので、写しになっている。
+   片方だけ直さないこと（トリップの .trip-code と同じ事情）
+   ============================================ */
+
+.account-id {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-account-id);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+}
+
+    /* display を書いた要素には、hidden 属性が効かない（落とし穴） */
+    .account-id[hidden] {
+        display: none;
+    }
+
+    /* 訪問済みでも色を変えない（サイト全体の決まり。リンクを紫にしない） */
+    a.account-id:visited {
+        color: var(--color-account-id);
+    }
+
+    /* キーボードで到達したことが分かるように（こっそりの窓の見出し・自分のバー） */
+    a.account-id:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+        border-radius: 2px;
+    }
+
+/* 【:hover は必ずこの形で囲む】タッチ端末で下線が残らないように */
+@media (hover: hover) and (pointer: fine) {
+    a.account-id:hover {
+        text-decoration: underline;
+    }
+}
+
+/* 相手の発言の行。名前の下の行。
+   【幅は 欄＋16px まで】送信者の欄（--message-sender-width）から左右に 8px ずつはみ出してよい＝トリップの10桁と同じ取り方
+   （吹き出しとのすき間 12px の中に収まる）。はみ出すぶんは、左右に均等に出す（負の margin） */
+.account-id.message-trip {
+    max-width: calc(var(--message-sender-width) + 16px);
+    margin: 1px -8px 0;
+    text-align: center;
+}
+
+/* 参加者一覧。名前の下の行（1人ぶんの幅 72px の中で切る。ここはリンクではない＝1人ぶんがボタンのため） */
+.account-id.participant-trip {
+    max-width: 68px;
+    text-align: center;
+}
+
+    .participant-item--ignored .account-id.participant-trip {
+        opacity: 0.4;
+    }
+
+/* 自分のプロフィールバー。名前の下の行（名前と同じく、長ければ切る） */
+.account-id.my-account {
+    max-width: 12em;
+    margin-top: 1px;
+}
+
+/* こっそりの窓の見出し。暗い地なので、明るい青へ（発言の中のリンクと同じ色。theme.css） */
+.private-talk-layer .account-id,
+.private-talk-layer a.account-id:visited {
+    color: var(--color-private-link);
+}
+
+.account-id.private-talk-head-trip {
+    margin-top: 1px;
+}
+
+/* ノックの小窓（ノックした人の名前の下） */
+.account-id.knock-request-trip {
+    max-width: 16em;
+}
+
+/* 参加者一覧の上の「プロフィール」（選んだ相手がアカウントID を出しているときだけ出る。見た目は隣のボタンと同じ）。
+   リンクなので、ボタンの見た目の決まり（.ignore-toggle-btn）に、下線なし・並べるための形・hidden の手当てだけを足す */
+.participant-profile-link {
+    display: inline-block;
+    text-decoration: none;
+    line-height: normal;
+}
+
+    .participant-profile-link[hidden] {
+        display: none;
+    }
+
+/* ============================================
+   6. 相手の発言（左寄せ。左に送信者、右に時刻、しっぽは左下）
+
+   【しっぽは SVG で描いている（.message-tail）。作りは下の「6-2」にある】
+   ============================================ */
+
+.message-row--other {
+    justify-content: flex-start;
+}
+
+/* 【狭い画面でも、相手の画像・スタンプの行は、文章の行とまったく同じ並び】
+
+       [アイコン] [  絵  ] 時刻
+       [名前   ]
+       [10桁   ]          ← トリップ（付けている人だけ）
+
+   要望：吹き出しのときとまったく同じ形にする。
+   斜め上に出ていて、上下どちらの行のものか分かりにくい。
+   **狭い画面だけの特別な並びを、丸ごとやめた**（この場所にあった @media の一式を消した）。
+   送信者の箱（アイコンの下に名前・トリップ）が、絵の縦の真ん中に並ぶ。
+
+   【これまでの経緯と、承知のうえで戻したこと】
+   ・… 狭い画面では「[アイコン] 名前」の行と、絵の行の2段にした。
+     **横に並べると、送信者の56px＋すき間のぶん絵が右へ押し出され、左右の寄せで送り主を
+     見分ける仕掛けが効かなくなる**（開発者が実機で発見）、が理由
+   ・… 名前・トリップを上の段へ、アイコンを絵の左へ（grid ＋ display: contents）
+   ・同じ日の午後… 実物を見た開発者が覆した。名前が絵の斜め上に来て、
+     上下どちらの行の名前か分かりにくい、が理由。理由は伝えたうえで「承知のうえ」
+   絵が右へ押し出される量＝送信者56px＋すき間12px＝68px（F-3 は アイコン20px＋すき間8px＝28px）。
+   そのぶん、入りきらない幅では写真が縮む（下の .message-bubble--image .message-image）。
+   いちばん横長の写真（240px）は 375px で 232px、360px で 217px、320px で 177px になり、
+   **時刻はどの幅でも画面の中に残る**（並びでは、320px で時刻が画面の右端に切れていた）。
+   スタンプ（120px）は縮まない
+
+   【700px は、こっそりの窓の狭い画面（PT_NARROW_MEDIA）と同じ境目】
+   「スマホ幅」をこのファイルで言うときは、この値1つに揃えてある（この場所では、もう使っていない） */
+/* 【角の丸みは、全周 16px で揃っている（戻した）】
+
+   それまで、しっぽが付く側の角（相手＝左下、自分＝右下）だけ丸みを小さくしていた。
+   しっぽが角に付いていたためで、**丸み > 枠線の太さ になると、
+   しっぽの付け根と角の間に切り欠きが見える**という制約があった
+   （枠線を3px→2pxにしたときに、実機で見えた）。
+
+   **しっぽが縦の真ん中へ移って、その制約ごと無くなった。**
+   角にはもう何も付かないので、丸みを特別扱いする理由が無い。
+   .message-bubble の border-radius: 16px だけで足りる */
+
+
+
+/* ============================================
+   6-2. しっぽ（SVGで描く）
+
+   【なぜ SVG なのか。CSSの三角2枚では、原理的に届かなかった】
+
+   まで、しっぽは「色つきの三角（::before）に白い三角（::after）を重ねて、
+   はみ出したぶんを線に見せる」作りだった。**あの作りでは、斜めの線の太さを
+   本体と揃えられない。**
+
+   斜辺の見え幅は「2枚の三角の横のずれ ÷ √2」で決まる。
+   等倍の画面では、そのずれが整数（＝画面の点）にしか置けないので、
+   **見え幅は 0.71px（＝1 ÷ √2）刻みでしか選べない。**
+   本体2px に対して選べるのは 1.41px か 2.12px の2つだけで、
+   **ちょうど 2px になる値が、そもそも存在しなかった。**
+
+     2.12px … 実機で「斜めだけ太い」
+     1.41px … 実機で「斜めが細すぎる」（同日、同じく指摘）
+
+   3pxのころに誰も違和感を言わなかったのは、たまたま 2.83px（本体比94%）という
+   良い値が選べたからで、**運が良かっただけだった。**
+
+   【SVG なら、この問題そのものが無い】
+   SVGの線は「引いた太さがそのまま一様に効く」ので、どの角度でも同じ太さになる。
+
+   【上下とも斜めにしてある（左右対称へ作り替えた）】
+   それまでは「上辺が水平・下辺が45度」だった。**同じ太さで引いても、
+   斜めのほうが太く見える**——水平な線は画面の点の並びに素直に乗るが、
+   斜めの線は乗らないので輪郭が広がるためである。
+   実機でも「三角の部分が太い」と指摘された（ChromeOSで明らか、他でも若干）。
+
+   **上下とも斜めにすれば、2本が同じ性質になって見え方が揃う。**
+   これが左右対称にしたいちばんの理由で、見た目の好みだけの話ではない。
+
+   【位置は、吹き出しの縦の真ん中】
+   左右対称になったので、下端ではなく中央に付ける。
+   **あわせて .message-row の揃えも下端から中央へ変えてある**——
+   しっぽだけ中央へ動かすと、行数の多い発言で**しっぽが宙を指す**ため。
+
+   【座標の決め方】
+   - 箱は 18×16px。**viewBox と width/height を同じ数にしてあるので、
+     SVGの1目盛り＝1px** になる（ここがずれると、線の太さもずれる）
+   - right（自分）／left（相手）を -16px にして、**目盛り16が、
+     吹き出しの白い内側の端（パディングボックス）にちょうど合う**ようにしてある。
+     枠線の太さが変わっても、この関係は自動で保たれる
+   - top: 50% と margin-top: -8px（箱の高さの半分）で、縦の中央へ置く
+   - 塗り（.message-tail-fill）は M4 8 L18 1 L18 15 Z。
+     先端から上下へ同じ角度で開く三角で、**右端を目盛り18まで伸ばしてある**（のりしろ。下記）
+   - 線（.message-tail-line）は M17 1.5 L4 8 L17 14.5。**閉じていない**ので、
+     吹き出しとの境目には線が引かれない
+   - 覆い（.message-tail-cover）は目盛り16〜18の白い長方形
+
+   【3つの順番には意味がある。入れ替えないこと】
+     塗り → 線 → 覆い
+   塗りが線より後だと、線の内側半分が塗りつぶされる。
+   覆いが線より前だと、内側へはみ出した線が隠れない。
+
+   【線を目盛り17まで伸ばし、覆いで切っているのは、必須】
+   まで、線は目盛り15で止めてあった。
+   線の端は進行方向に対して直角に切られ、斜めの線だとその切り口が 0.45px ほど先へはみ出す。
+   16（＝内側の端）で止めると白い内側へ色が飛び出すため、
+   15 で止めて、**届かない 15〜16 は吹き出しの枠線に輪郭を続けさせていた。**
+
+   **これが「ちょうど接する」の仲間だった。**
+   ChromeOSの実機で **しっぽが吹き出しから若干離れて見えた**（ウィンドウズのズーム1.25でも再現）。
+   等倍なら継ぎ目がドットの境に来るので繋がって見えるが、
+   半端な拡大率だと継ぎ目が半端な位置に来て、**輪郭が一瞬とぎれる。**
+
+   **対処＝受け渡しをやめて、重ねる。**
+   線を目盛り17まで伸ばして**枠線の帯（16−太さ 〜 16）を完全にまたぎ**、
+   内側へはみ出したぶんを覆いで白く塗りつぶす。
+   **覆いの左端がずれても、その先は白い内側なので、どちらへ転んでも何も見えない**
+   （＝ずれても壊れない形になった）。
+
+   【「ちょうど接する」は、環境によっては接しない ── のりしろが要る】
+   **ChromeOSの実機で、しっぽの口に吹き出しの枠線が残って見えた。**
+   ウィンドウズ（等倍）とスマホ（高精細）では、きれいに出ていた。
+
+   原因は、しっぽの白い塗りの端と、吹き出しの白い内側の端が、
+   **ちょうど接するだけだったこと。** 接している境目が画面のドットの半端な位置に来ると
+   （ChromeOSは拡大率が1.25倍などの半端な値であることが多い）、
+   **両側とも半分ずつしか塗られず、下にある枠線の色が透けて見える。**
+
+   計算するとこうなる。境目がドットの真ん中に来たとき、
+   しっぽ側の塗りの濃さは 0.5。下にあるのは「枠線0.5＋白0.5」。
+   重ねると 白×0.75 ＋ 枠線×0.25 で、**枠線の色が4分の1残る。**
+
+   **対処＝接するのをやめて、重ねる。**
+   塗りの右端を目盛り18まで伸ばし、**吹き出しの内側へ 2px 食い込ませてある。**
+   食い込んだ先は白い内側なので、白を重ねても何も起きない。
+
+   **【一般化】隠すためのものは、必ず重ねること。**
+   「ちょうど接する」は、拡大率が整数のときにしか成り立たない
+   ============================================ */
+
+.message-tail {
+    position: absolute;
+
+    /* 吹き出しの縦の中央へ。-8px は箱の高さ（16px）の半分 */
+    top: 50%;
+    margin-top: -8px;
+
+    /* 【viewBox と同じ数にすること】ここがずれると1目盛りが1pxでなくなり、
+       線の太さまでずれる。マークアップ側の viewBox="0 0 18 16" と対になっている */
+    width: 18px;
+    height: 16px;
+
+    pointer-events: none; /* 吹き出しの外へ出ている箱なので、選択や指の当たりを奪わない */
+
+    fill: none; /* 塗るのは .message-tail-fill だけ */
+    stroke-width: var(--bubble-tail-line-width); /* 本体の枠線とは別のつまみ（理由は先頭） */
+    stroke-linejoin: miter; /* 先端を、とがらせる */
+}
+
+    /* しっぽの内側。吹き出しの内側の白とつながる。
+       **右端が目盛り18まであるのが「のりしろ」**（理由は上のコメント）。
+       覆いと同じく白だが、**役目が違う**——こちらは線より先に描く「中身」で、
+       あちらは線より後に描く「隠すもの」。まとめられない */
+    .message-tail-fill,
+    .message-tail-cover {
+        fill: #FFFFFF;
+        stroke: none; /* 【必須】親の stroke を受け継ぐと、線が出る */
+    }
+
+    /* 色は、JS側が吹き出しへインラインで入れた --bubble-border-color を受け継ぐ
+       （SVGはその子なので、何もしなくても届く）。
+       予備の色を相手・自分で分けてあるのは、変更前の三角と同じ扱い */
+    .message-bubble--other .message-tail {
+        left: -16px;
+        stroke: var(--bubble-border-color, #14B8A6);
+    }
+
+    /* 自分の発言は、相手のものを左右反転させただけ。
+       **形は1つしか持たない**（2つ持つと、片方だけ直される） */
+    .message-bubble--self .message-tail {
+        right: -16px;
+        stroke: var(--bubble-border-color, #F97316);
+        transform: scaleX(-1);
+    }
+
+
+/* ============================================
+   6-4. 画像の発言（Eの回）
+   ============================================
+
+   画像の発言は、本文がサーバーの組み立てた印だけである（[img:名前:幅x高さ]）。
+   JS側（parseImageToken／buildImageHtml）が、それを <img> に置き換える。
+
+   【吹き出しは外してある】（変えた）
+   外し方は「絵文字だけの発言」と同じ1か所（.message-bubble--emoji-only と並べてある）。
+   それまでは「縁の色が誰が送ったかを示す」として残していたが、
+   スタンプと揃えて外した（開発者の指定）。アイコンと名前で識別は付く */
+
+.message-bubble--image {
+    /* 中の <a> はインライン要素なので、行の下に隙間（行送りぶん）が残る。
+       flex にすると、その隙間が消えて絵がぴったり収まる */
+    display: flex;
+}
+
+/* 押したら、元の大きさで新しいタブに開く。
+
+   【自前の画像ビューアは作らない】
+   閉じる・スワイプ・拡大を全部自分で作ることになり、得られるものに対して重すぎる
+   （開発者と決めた）。
+   ブラウザに任せれば、拡大も保存も回転も、その端末の慣れたやり方で使える */
+.message-image-link {
+    display: block;
+    line-height: 0; /* リンクの中の余分な行送りを消す */
+}
+
+.message-image {
+    /* 【幅は、実機で見て決める値なので変数にしてある】
+       ここ1か所を変えれば、部屋の中の画像がすべて付いてくる */
+    max-width: var(--message-image-max-width);
+
+    /* 【必ず一緒に書くこと】
+       幅を縮める指定（上の max-width）が効いたときに、高さも同じ比で縮むようにするため。
+       auto にしておけば、縦横の比を保ったまま縮む */
+    height: auto;
+
+    /* 【max-height は書かないこと】（外した）
+       高さの上限は、JS が属性の寸法に入れ済みである（:root の --message-image-max-height）。
+       ここで高さを切ると、幅はそのままで高さだけ詰まり、**縦長の画像がつぶれる**。
+       上の max-width も、JS が枠に収めた寸法を入れている今は、保険でしかない
+       （幅だけを縮める指定なので、比は崩れない） */
+
+    border-radius: 12px;
+
+    /* 【背景を敷いてあること】
+       吹き出しがあったころ、透明を含むPNGが白い吹き出しの上で
+       「何も無いところ」と区別が付かなかったための地。吹き出しを外した今は
+       ログの地と同じ色なので見た目は変わらないが、届く前の場所取りの目印として残してある */
+    background-color: var(--color-background-mid);
+
+    /* 届く前の場所取りが崩れないよう、object-fit は指定しない
+       （width/height 属性と max-width/height:auto だけで、比は保たれる） */
+    display: block;
+}
+
+/* 【入りきらない幅では、部屋の中の画像だけ縮めて、時刻を画面に残す】
+
+   相手の画像の行を、狭い画面でも文章の行と同じ並び（[送信者56px] [絵] [時刻]）に戻したら、
+   いちばん横長の写真（240px）で、360px の画面では時刻が右端に 6px 切れ、
+   320px では写真そのものが画面からはみ出した（開発機で実測）。
+   文章の吹き出しは、入りきらなければ縮んで折り返すので起きない。**写真は幅が決まっていて縮まなかった。**
+
+   【100% と、今までの上限の小さいほう】入りきる幅では今までどおり（上限240px）、
+   入りきらない幅でだけ縮む。高さは height: auto と width/height 属性の比で付いてくるので、つぶれない。
+   link（.message-image-link）は吹き出しの中の flex の子なので、min-width: 0 で縮めるようにしてある。
+   こっそりの窓の画像（.private-talk-text--image）は対象外（あちらは窓の幅に合わせた別の上限がある） */
+.message-bubble--image .message-image-link {
+    min-width: 0;
+}
+
+.message-bubble--image .message-image {
+    max-width: min(var(--message-image-max-width), 100%);
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .message-image-link:hover .message-image {
+            opacity: 0.9;
+        }
+    }
+
+
+/* ============================================
+   6-5. こっそりの窓の中の画像
+   ============================================
+
+   窓は狭い（既定320px）ので、部屋の中より小さく出す。
+
+   【取りに行く先が違うだけで、見た目の作りは同じ】
+   こっそりの画像は Chat/PrivateImage.aspx を通る（当事者かどうかを毎回確かめる）。
+   その違いはURLに出るだけで、CSSには現れない */
+
+.private-talk-text--image {
+    /* 文章のときの折り返しの指定が、絵には効かないようにしておく */
+    line-height: 0;
+}
+
+    .private-talk-text--image .message-image {
+        /* 高さの上限（--private-image-max-height）は、JS が属性の寸法に入れる。
+           ここに max-height を書かないこと（部屋の中の .message-image と同じ理由） */
+        max-width: var(--private-image-max-width);
+
+        /* 【暗い窓の中では、白ではなく窓の地を敷く】
+           透明なPNGの下に明るい地が出ると、そこだけ穴が空いて見える */
+        background-color: var(--color-private-bg);
+    }
+
+
+/* ============================================
+   6-5b. スタンプの発言
+   ============================================
+
+   本文がサーバーの組み立てた印（[stamp:frog-01]）だけの発言。
+   JS側（parseStampToken／buildStampHtml）が、それを <img> に置き換える。
+   吹き出しは外してある（外し方は、絵文字だけの発言と同じ1か所）。
+
+   【大きさは --stamp-size の1か所】部屋のログも、こっそりの窓も同じ大きさ */
+
+.message-bubble--stamp {
+    /* 絵の下に行送りぶんの隙間を残さない（画像の発言と同じ手当て） */
+    display: flex;
+    line-height: 0;
+}
+
+/* スタンプの絵そのもの。
+   【height: auto ＋ aspect-ratio】幅は --stamp-size だが、こっそりの窓が狭いときは
+   max-width で窓の幅まで縮む。高さを固定にすると、そのとき絵が縦に伸びるので、
+   縦横の比（正方形）で高さを決める。これで絵が届く前から、場所が確保される */
+.message-stamp {
+    display: block;
+    width: var(--stamp-size);
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: contain; /* 将来、正方形でない絵（PNG・手描き）が混ざっても歪ませない */
+}
+
+/* 押すと、スタンプの一覧でそのスタンプを選べる（新しいタブで絵を開くことはしない）。
+   見た目はボタンらしくしない——絵だけが浮いている形を崩さない */
+.message-stamp-btn {
+    display: block;
+    max-width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    background: none;
+    line-height: 0;
+    cursor: pointer;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .message-stamp-btn:hover .message-stamp {
+            opacity: 0.85;
+        }
+    }
+
+    .message-stamp-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+/* こっそりの窓の中。文章の行の高さの指定が、絵に効かないようにする */
+.private-talk-text--stamp {
+    line-height: 0;
+}
+
+
+/* ============================================
+   6-5c. スタンプの一覧（発言に入れるものを選ぶパネルの「スタンプ」タブ）
+   ============================================
+
+   上にセットのタブ（カエル／ヒヨコ）、その下にグリッド。
+   面の高さは --insert-pane-height で固定のまま（絵文字と行き来しても跳ねない）。
+   グリッドが入りきらないときは、グリッドの中だけがスクロールする */
+
+.insert-pane--stamp {
+    gap: 6px;
+}
+
+/* セットの選びと「?」の1行。「?」は tablist の外、同じ行の右端（Core/HelpTexts.vb の "room.stamp"） */
+.stamp-set-row {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+    .stamp-set-row > .stamp-set-tabs {
+        flex: 1 1 auto;
+        min-width: 0;
+        border-bottom: none;
+    }
+
+    .stamp-set-row > .help {
+        flex: 0 0 auto;
+        margin-right: 4px;
+    }
+
+.stamp-set-tabs {
+    display: flex;
+    flex-shrink: 0;
+    gap: 4px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+    .stamp-set-tabs[hidden] {
+        display: none;
+    }
+
+/* セットのタブ。入れるもののタブ（.insert-tab）と同じ考え方で作ってある——
+   **選ばれているかは aria-selected 1つで決め、色だけでなく下線（形）でも示す**。
+   下線は選ばれていないタブにも同じ太さで置き、色だけ transparent にする
+   （太さが変わると、選び直すたびにタブの高さが動く） */
+.stamp-set-tab {
+    box-sizing: border-box;
+    min-height: 36px;
+    padding: 0 14px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 8px 8px 0 0;
+    font-size: 13px;
+    font-weight: bold; /* 選び直しで文字幅が変わらないよう、常に太字 */
+    font-family: inherit;
+    color: var(--color-text-sub);
+    cursor: pointer;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .stamp-set-tab:hover {
+            background-color: var(--color-background-mid);
+        }
+    }
+
+    .stamp-set-tab[aria-selected="true"] {
+        background-color: var(--color-accent-bg);
+        color: var(--color-accent);
+        border-bottom-color: var(--color-accent);
+    }
+
+    .stamp-set-tab:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+/* グリッドの入れ物。残りの高さを全部取り、ここだけがスクロールする。
+   【position: relative を外さないこと】JS（StampPicker.reveal）が、ボタンの offsetTop を
+   「この入れ物からの距離」として読んで、目立たせたスタンプが見える位置へスクロールする */
+.stamp-grid-host {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* 1つのセットのグリッド。幅に合わせて並ぶ数が決まる。
+   パネル340pxで、スクロールバーが幅を取る環境（Windows）は3つ、取らない環境（スマホ）は4つ
+   （実測）。どちらでも、ボタンの中の絵は max-width で収まる */
+.stamp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(calc(var(--stamp-size) * 0.6), 100%), 1fr)); /* 下限は min( , 100%) で包む */
+    gap: 6px;
+    padding: 4px;
+}
+
+    .stamp-grid[hidden] {
+        display: none;
+    }
+
+    /* 【画面が低くてパネルを縮めているときは、一覧のマスも小さくする】
+
+       ログをスタンプ1つぶん残すためにパネルを縮める（JS の fitPaneToLeaveLog が is-shrunk を付ける）。
+       そのままのマスでは 360×640 で「3列×1.8行」しか見えないので、マスを小さくして列と行を稼ぐ。
+
+       【絵の大きさの下限の考え方】スタンプの文字は、絵の高さのおよそ14%で描いてある
+       （240の中に34）。0.45倍＝54pxで文字は約7.6px——**文字は読みにくいが、絵柄は見分けられる**。
+       押すと下の確認の帯に大きく（0.8倍＝96px。文字は約13.6px）出るので、選んでから確かめられる。
+       文字まで読ませるなら 0.55倍（66px、文字9.4px）あたりが下限。
+       マスの幅は「絵＋余白と枠（左右で14px）」 */
+    .insert-panel.is-shrunk .stamp-grid,
+    .chat-room.is-insert-media .stamp-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(calc(var(--stamp-size) * 0.45 + 14px), 100%), 1fr)); /* 同上 */
+    }
+
+        .insert-panel.is-shrunk .stamp-choice-img,
+        .chat-room.is-insert-media .stamp-choice-img {
+            width: calc(var(--stamp-size) * 0.45);
+        }
+
+    /* 【スマホで入力欄を隠している間も、小さいマスのまま】
+       入力欄を隠すと、Galaxy くらいの高さではパネルを縮める必要が無くなり（is-shrunk が外れ）、
+       マスが元の大きさ（72px・3列）に戻る。すると **見えるスタンプの数がほとんど増えない**
+       （実測＝360×660 で 4列×2.3行 → 3列×3.1行。どちらも約9個）。
+       空いた縦を一覧に回すのが目的なので、入力欄を隠している間（is-insert-media）も小さいマスにする。
+       54px の文字は Galaxy の実機で「読みやすい大きさ」だった（開発者の判断） */
+
+.stamp-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background-color: #FFFFFF;
+
+    /* 枠線は、目立たせるとき（下の .is-highlighted）と同じ太さで常に置いておく。
+       太さが変わると、目立たせた瞬間にまわりのスタンプが動く */
+    border: 3px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+    .stamp-choice-img {
+        display: block;
+        width: calc(var(--stamp-size) * 0.6);
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .stamp-choice:hover {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+    .stamp-choice:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    /* 受け取ったスタンプを押して開いたとき、そのスタンプを目立たせる。
+       色だけに頼らないよう、太い枠（形）で示す */
+    .stamp-choice.is-highlighted {
+        border-color: var(--color-accent);
+        background-color: var(--color-accent-bg);
+    }
+
+/* ============================================
+   6-5d. 送る前の確認
+   ============================================
+
+   スタンプも画像も「選んだら即送信」をやめ、確認の帯（または面）から送る。
+   要件の本体は「送る前に中止できること」（開発者が実機を見て覆した）。
+   ボタンの形は、スタンプと画像で共通（.insert-confirm-btn）。
+
+   【display を書いたクラスには、[hidden] も一緒に書くこと】（.insert-pane と同じ罠） */
+
+.insert-confirm {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    background-color: #FFFFFF;
+    border: 2px solid var(--color-accent);
+    border-radius: 12px;
+}
+
+    .insert-confirm[hidden] {
+        display: none;
+    }
+
+.insert-confirm-side {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.insert-confirm-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--color-text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.insert-confirm-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 送る・やめる（・選び直す）。押せる範囲は 44px 四方以上（素人・年配の人が来る前提） */
+.insert-confirm-btn {
+    min-height: 44px;
+    min-width: 64px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    color: var(--color-text-strong);
+    font-size: 14px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+    /* 「送る」だけ、塗りつぶして目立たせる（色だけでなく、塗りと枠の形でも違いが分かる） */
+    .insert-confirm-btn--send {
+        background-color: var(--color-accent);
+        border-color: var(--color-accent);
+        color: #FFFFFF;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .insert-confirm-btn:hover {
+            background-color: var(--color-accent-bg);
+        }
+
+        .insert-confirm-btn--send:hover {
+            background-color: var(--color-accent);
+            opacity: 0.9;
+        }
+    }
+
+    .insert-confirm-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+/* スタンプの確認の帯。絵はグリッドより大きく、送る大きさ（--stamp-size）より小さく。
+   面の高さは固定なので、帯が出るとグリッドのほうが縮む（中でスクロールする） */
+.stamp-confirm-img {
+    flex-shrink: 0;
+    width: calc(var(--stamp-size) * 0.8);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+}
+
+    /* パネルを縮めているとき（画面が低いとき）は、帯の絵も小さくする。
+       そのままだと帯だけで面の半分以上を取り、一覧が1行も見えなくなる。
+       名前は隣に14pxの太字で出ているので、何を選んだかは読める */
+    .insert-panel.is-shrunk .stamp-confirm-img {
+        width: calc(var(--stamp-size) * 0.5);
+    }
+
+/* 画像の確認。送る実物を、面の幅いっぱいに出す（開発者の指定：狭い画面ならほぼ画面の幅） */
+.image-confirm {
+    flex-direction: column;
+    align-self: stretch;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+.image-confirm-img {
+    display: block;
+    max-width: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    object-fit: contain;
+    border-radius: 8px;
+    background-color: var(--color-background-mid); /* 透明な PNG の輪郭が分かるように */
+}
+
+/* 「画像を選ぶ」は、確認が出ている間は隠す（.image-pick-btn は display: flex なので必要） */
+.image-pick-btn[hidden] {
+    display: none;
+}
+
+/* 送った直後、しばらく「送る」を休ませている間（開発者の指定。長さはJS側の COOLDOWN_MS）。
+   【押せないことが、見た目で分かること】薄くして、指の形もやめる。
+   disabled は使っていない（キーボードの焦点が外れるため）。押されてもJS側が無視する。
+   【、休ませる相手をグリッドから「送る」へ移した】次のスタンプを選ぶことは止めない */
+.insert-pane--stamp.is-cooling .insert-confirm-btn--send,
+.image-confirm.is-sending .insert-confirm-btn {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* 断られた理由・読めなかったとき（ふだんは空で、場所も取らない） */
+.stamp-status {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 2px 4px;
+    font-size: 13px;
+    color: var(--color-text-quiet);
+}
+
+    .stamp-status:empty {
+        display: none;
+    }
+
+    .stamp-status.is-error {
+        color: var(--color-error-text);
+        font-weight: bold;
+    }
+
+
+/* ============================================
+   6-6. 画像を選ぶ（発言に入れるものを選ぶパネルの「画像」タブ）
+   ============================================
+
+   中身は「大きなボタン1つ ＋ 注意書き1行」だけである。
+
+   【入口をパネルの中に置いた理由】
+   入力行の右は 丸ボタン44 ＋ すき間8 ＋ 送信33 ＝ 85px で既に埋まっていて、
+   3つ目を積むと狭い画面で入力欄が潰れる。左に置けば入力欄の幅を食う。
+   パネルの中なら、入力行の寸法にいっさい触らずに済む */
+
+.insert-pane--image {
+    align-items: center;
+    justify-content: center;
+}
+
+    /* 案内の1行は、ボタンのすぐ下へ。
+
+       【共通の .insert-pane-notice は margin: auto 0 で中央へ寄る】
+       中身がその1行だけの面なら合っているが、
+       ここではボタンから引き離されてしまうので、打ち消しておく */
+    .insert-pane--image .insert-pane-notice {
+        margin: 0;
+        max-width: 320px;
+    }
+
+.image-pick-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    /* 【大きく取ってあること】
+       この面には、押すものがこれ1つしか無い。
+       小さく作る理由が無いうえ、素人・年配の人が来る前提のサイトである */
+    padding: 20px 28px;
+
+    background-color: #FFFFFF;
+    color: var(--color-accent);
+
+    /* 【破線にしてある】
+       「ここに入れる」という形が、線の見た目そのもので伝わる。
+       色だけに頼らない、という決まりにも合う */
+    border: 2px dashed var(--color-accent);
+    border-radius: 12px;
+
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .image-pick-btn:hover {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+.image-pick-icon {
+    width: 40px;
+    height: 40px;
+}
+
+
+/* ============================================
+   6-8. 入れるものを選ぶパネルの、打ちかけの文の見本の帯
+   ============================================
+
+   【こっそりの窓あてに開いたときの、狭い画面だけ】
+   狭い画面では、パネルが窓の入力欄を覆うので、入れた絵文字が見えない。
+   そこで窓の入力欄の末尾をここへ写す。
+   **広い画面では出さない**（決定：スマホでは役に立つが、PC では要らない）。
+   広い画面の重なりは、窓の最初の置き場所のほうで解いた（JS の placeWindow）
+
+   【宛先の名前は出さない】窓のボタンから開いている以上、宛先は自明だった
+   （理由：その人とのこっそりの窓から開いた絵文字などのパネルなので）
+
+   【窓と同じ暗い地】（--color-private-head）。窓の見出しの帯と同じで、
+   いちばん透けても 0.75 までしか薄くならない */
+
+.insert-target-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: var(--color-private-head);
+    color: var(--color-private-text);
+    font-size: 13px;
+}
+
+    /* 【必須】display を書いた要素には、hidden 属性が効かない
+       （.insert-pane・.emoji-search-results と同じ罠） */
+    .insert-target-row[hidden] {
+        display: none;
+    }
+
+    /* 広い画面では出さない。
+       【境目の 700px は、JS の PT_NARROW_MEDIA とこのファイルの他のメディアクエリと揃えること】
+
+       【ただし、窓の隣に入りきらず重なってしまうときは出す】（JS の positionPanel が
+       is-covering-window を付ける）。帯は「パネルが窓の入力欄を覆う」ときのための
+       手当てなので、広い画面でも覆うなら要る。:not([hidden]) は、上の hidden を必ず勝たせるため */
+    @media (min-width: 701px) {
+        .insert-target-row {
+            display: none;
+        }
+
+        .insert-panel.is-covering-window .insert-target-row:not([hidden]) {
+            display: flex;
+        }
+    }
+
+/* 入れた文の見本。**頭のほうを削って、末尾を見せる**（JS の refreshPreview が幅に合わせて詰める）。
+
+   【text-overflow: ellipsis を書かないこと】あれは末尾を「…」で切るので、
+   **今入れた絵文字（たいてい末尾に入る）だけが見えなくなる**（375pxで実測）。
+   overflow: hidden は、JS が動かなかったときの保険として残してある */
+.insert-target-preview {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+
+    /* 名前を外したので、見本が主役になった。窓の本文と同じ色で出す */
+    color: var(--color-private-text);
+}
+
+    /* 空のときは、窓の入力欄と同じ placeholder を薄く出す */
+    .insert-target-preview.is-empty {
+        color: var(--color-private-quiet);
+    }
+
+
+/* ============================================
+   6-7. こっそりの窓の、入れるものを選ぶボタン（入力欄の左）
+   ============================================
+
+   【、画像専用のボタンから作り替えた】
+   押すと本体と同じ「発言に入れるものを選ぶ」パネルが、この窓あてに開く
+   （絵文字・スタンプ・画像）。置き場所も、送信ボタンの隣から入力欄の左へ移した
+   （要望：画像のボタンは入力欄の左に置く。送信ボタンから離れて、押し間違いが減る）。
+
+   【入ることは実測してある】
+   320pxの窓で このボタン34 ／ 入力欄184 ／ 送信60、はみ出しなし。
+   窓を縮められる下限（240px）でも、入力欄104で収まる。
+
+   【送信ボタンと同じ高さになる】
+   .private-talk-input-row は align-items を指定していないので stretch。
+   入力欄（2行＝50px）に合わせて、送信ボタンもこのボタンも同じ高さに伸びる */
+
+.private-talk-insert-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 34px;
+    padding: 0;
+
+    /* 【白く塗ってあること】
+       窓の中は暗いので、塗らないとボタンの形そのものが見えない
+       （入力欄が白いので、そちらと揃う） */
+    background-color: #FFFFFF;
+    color: var(--color-accent);
+
+    /* 枠線の太さは、入力欄と揃える（同じ行に並ぶため） */
+    border: 1px solid var(--color-border-input);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .private-talk-insert-btn:hover:not(:disabled) {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+    /* パネルがこの窓あてに開いている間（JS側の InsertPanel が付け外しする）。
+       本体の丸いボタンが開いている間に色を変えるのと、同じ扱い */
+    .private-talk-insert-btn.is-active {
+        background-color: var(--color-accent-bg);
+        border-color: var(--color-accent);
+    }
+
+    .private-talk-insert-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+/* 中の笑顔。本体の丸いボタンの <svg> を写して使う（線の太さなどは、あちらのまま） */
+.private-talk-insert-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+
+/* ============================================
+   7. 自分の発言（右寄せ。左に時刻、右に送信者、しっぽは右下）
+      ＝ 6番の左右をそのまま反転したもの。しっぽも同じSVGを反転して使う
+   ============================================ */
+
+.message-row--self {
+    justify-content: flex-end;
+
+    /* 【自分の発言には、アイコンと名前が無い】（LINEと同じ形）
+       かわりに JS が読み上げ専用の「自分の発言」（.visually-hidden）を行の頭に置く。
+       あれは position: absolute なので、**この行を基準にさせる**——
+       基準が無いとスクロールするログの外側（.chat-log-wrapper）が基準になり、
+       ログの中身と一緒に動かない1pxの要素が溜まっていく */
+    position: relative;
+}
+
+/* 角の丸みは全周 16px（理由は 6番のコメント）。ここで特別扱いしない */
+
+
+/* ============================================
+   8. システムメッセージ（入退室のお知らせ）と、日付の区切り行
+
+   どちらも「誰かの発言」ではないため、吹き出しにはせず、中央寄せの1行として
+   会話の流れの中に控えめに置く。自分の入退室行も、他人のものと同じ見た目にする
+   （左右の寄せは無し）
+   ============================================ */
+
+/* 入退室のお知らせ（「○○さんが入室しました」など） */
+.system-message {
+    text-align: center;
+    font-size: 12px;
+    color: var(--color-text-muted); /* 会話の邪魔をしないよう、背景から浮かないグレー系にする */
+    padding: 0 16px;
+    overflow-wrap: break-word; /* 長いニックネームでも、はみ出さずに折り返す */
+}
+
+/* 日付の区切り行（「」）。左右に細い線を引いて、区切りらしく見せる */
+.date-separator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+    /* ::beforeと::afterで、文字の左右へ線を伸ばす
+       （flexの子として1:1で伸びるため、文字の長さが変わっても左右が同じ長さになる） */
+    .date-separator::before,
+    .date-separator::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background-color: var(--color-background-dark); /* チャットログの背景（--color-background-mid）より、少しだけ濃い色 */
+    }
+
+    .date-separator span {
+        flex-shrink: 0; /* 日付の文字自体は、縮めずにそのまま表示する */
+    }
+
+
+/* ============================================
+   9. メッセージ入力欄
+   ============================================ */
+
+/* 入力欄の上の1行。左に「送信できなかった理由」、右に残り文字数を置く。
+
+   【ここは space-between でよい】
+   「項目名とコントロールは space-between で離さない」という決まりがあるが、
+   あれは1組のものを引き離してはいけない、という話である。
+   ここは左右で役割の違う別々のものを、それぞれの端に置きたいので、当てはまらない。
+
+   【中身が空でも高さを保つ】
+   理由が出たときだけ行を作ると、そのぶん入力欄が下から突き上げられ、
+   打っている最中に画面が跳ねる。min-heightで1行分を確保しておく */
+.chat-input-info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 16px 0;
+    background-color: var(--color-background-dark); /* 入力エリアと地続きに見せる */
+    font-size: 11px;
+    line-height: 1.4;
+    min-height: 1.4em;
+    box-sizing: content-box; /* min-heightを、paddingの内側の高さとして扱う */
+}
+
+/* 送信できなかった理由（サーバーが返した文言をそのまま出す） */
+.send-reject-text {
+    color: var(--color-error-text);
+    font-weight: bold;
+    flex: 1;
+    min-width: 0; /* 文言が長くても、右の文字数を押し出さないようにする */
+    overflow-wrap: break-word;
+}
+
+/* 改行のしかたの案内（「Shift+Enter で改行」）。
+
+   入力欄を1行から始める形にしたため、「複数行も打てる」ことが見た目から
+   伝わらなくなった。その埋め合わせとして、この行の左半分に置いている。
+
+   送信できなかった理由と、同じ場所を取り合う（JS側が show/hide で入れ替える）。
+   理由のほうが今すぐ必要な情報なので、出ている間はこちらが引っ込む。
+
+   文字数カウンタの平常時と同じ薄さにしてあるのは、
+   打っている間ずっと視界に居座らせないため（役割も「常にそこにある案内」で同じ） */
+.input-hint {
+    color: var(--color-text-quiet);
+    /* 【flex: 1 にしてはいけない】
+       送信できなかった理由（.send-reject-text）が flex: 1 のため、
+       両方を伸ばすと、理由が空のときでも余白を半分ずつ分け合ってしまう。
+       案内が実際より狭い幅に押し込められ、まだ余裕があるのに「…」で省略される
+       （実測：横1100pxの画面で、案内も空の理由も297pxずつ分け合っていた）。
+       案内は文字のぶんだけ取り、余った幅は理由の側に持たせる */
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis; /* 極端に狭い画面でも、右の文字数を押し出さない */
+}
+
+/* 文字数（現在 / 上限）。目立たせ方を3段階に分けている。
+
+   打っている間ずっと目立つのは邪魔なので、普段は薄く置いておき、
+   上限に近づいたときだけ強くする。段階の判定はJS側（updateMessageCounter）にあり、
+   ここは付いたクラスに応じて見た目を変えるだけ */
+.message-counter {
+    color: var(--color-text-quiet); /* 普段。あるのは分かるが、気にならない濃さ */
+    flex-shrink: 0; /* 桁が増えても、位置が動かないようにする */
+    font-variant-numeric: tabular-nums; /* 数字の幅を揃え、1文字打つたびに横へ揺れないようにする */
+}
+
+    /* 残りが少なくなってきた（JSのCOUNTER_WARN_REMAINING以下）。
+       まだ間違いではないので、色は変えず、濃さと太さだけで気づかせる */
+    .message-counter--near {
+        color: var(--color-text-strong);
+        font-weight: bold;
+    }
+
+    /* 上限を超えた。送信ボタンも、あわせて無効になる
+       （--nearより後ろに置くこと。両方付くことは無いが、こちらを必ず優先させるため） */
+    .message-counter--over {
+        color: var(--color-error-text);
+        font-weight: bold;
+    }
+
+/* 目には見えないが、読み上げソフトには読まれる要素
+   （上限に近づいたことの知らせ＝#counterAnnounce で使っている）
+
+   display: none や visibility: hidden にしてはいけない。
+   読み上げソフトからも消えてしまい、置いた意味が無くなる。
+   1px の箱に押し込めて切り抜くのが、この目的の定石 */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: var(--color-background-dark); /* こちらも同じ色に統一 */
+    border-top: 1px solid var(--color-border-light);
+    align-items: flex-end;
+    position: relative; /* 入れるものを選ぶパネル（.insert-panel）を、この行を基準に浮かせるため */
+}
+
+/* 送信ボタンと、入れるものを選ぶボタンを、縦に積む箱。
+
+   親（.chat-input-row）が align-items: flex-end なので、この箱ごと下端に貼り付く。
+   結果、送信ボタンの位置は今までと1pxも変わらず、その上に丸いボタンが乗る。
+
+   【実測】入力欄の高さ 93.5px に対して、44 ＋ すき間 8 ＋ 送信 33 ＝ 85px。
+   8.5px 余る（実際の画面で計測）。
+
+   【align-items: center にしても、送信ボタンの幅は変わらない（実測で確認）】
+   まで stretch（既定）で、「幅の広いほうに合わせて絵文字ボタンも伸びる」
+   形だった。丸いボタンにするために揃えを外したが、
+   **送信ボタンは元から自分の中身で 60px あり、stretch に伸ばされてはいなかった。**
+   実測＝stretch でも center でも送信 60px、入力欄 600px、この箱 60px で、すべて同じ。
+   center にしてあるのは、44px の円を 60px の送信ボタンの真上に置くため */
+.chat-input-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0; /* 入力欄が伸びても、ボタン側は縮めない */
+}
+
+/* 発言に入れるもの（絵文字・スタンプ）を選ぶパネルを開くボタン。
+
+   【、😀の文字から丸いボタンへ作り替えた】
+   それまでは絵文字の 😀 をそのまま中身にして、退室・送信と同じ
+   --chat-btn-* の大きさで並べていた。変えた理由は2つ。
+
+   ①【絵は SVG で描く】😀 は環境ごとにフォントが違い、字面の余白も
+     見た目の大きさも変わる。枠いっぱいに作り込んでも端末によって別物になるため、
+     「まんまるが大きく見えること」を満たせない。
+     歯車ボタンが同じ理由で SVG になっているので、判断も揃う。
+     **「絵文字だけは😀を使ってよい例外」という決まりは、この作り替えで役目を終えた。**
+
+   ②【--chat-btn-* から外した】送信は角の丸い長方形で、こちらは円。
+     形が違うものを同じつまみで動かすのは無理がある（開発者の判断）。
+     大きさは、専用の --insert-btn-size が持つ。
+
+   【色は送信ボタンと変えてある】送信は「決定」で、こちらは「開く」。
+   同じ強さで並ぶと、どちらを押せばよいのか一瞬迷う。
+   白＋薄い枠にしてあるのは、隣の入力欄と同じ見た目にするため
+   （入力エリアの背景 #C7D9F5 に対して、--color-border-input だけでは
+     ほとんど見えない。実測の比で 1.01:1。円であることを見せるには、
+     中を白く塗る必要がある） */
+.insert-btn {
+    width: var(--insert-btn-size);
+    height: var(--insert-btn-size);
+    flex-shrink: 0; /* 【必須】狭い画面で潰さない。押せる範囲は、狭い画面でこそ縮めない
+                       （閉じるボタンで実際に潰れた前例がある） */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border-input);
+    border-radius: 50%; /* 円。大きさが変わっても、そのまま円のまま */
+    color: var(--color-text-sub); /* 中の笑顔は currentColor で、この色を拾う */
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+    /* マウスがある環境だけ（理由は上の「0-2. ホバーの効かせ方」） */
+    @media (hover: hover) and (pointer: fine) {
+        .insert-btn:hover:not(:disabled) {
+            background-color: var(--color-accent-bg);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+    }
+
+    /* 開いている間は、押されていることが分かるようにする
+       （人数表示ボタン・歯車と同じ .is-active の使い方） */
+    .insert-btn.is-active {
+        background-color: var(--color-accent-bg);
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+    }
+
+    /* 接続が切れている間は、入力欄・送信ボタンと一緒に押せなくなる */
+    .insert-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+/* 中の笑顔。大きさはボタンから計算で出す（数値をここへ直接書かないこと）。
+   0.75 は「円の中で目いっぱいに」から。
+   44px のボタンなら 33px で、まわりに 5.5px ずつ残る */
+.insert-btn-icon {
+    width: calc(var(--insert-btn-size) * 0.75);
+    height: calc(var(--insert-btn-size) * 0.75);
+    display: block;
+}
+
+/* 発言に入れるものを選ぶパネル。入力欄の行の「上」へ浮かせる。
+
+   【.emoji-panel から改名した】
+   中身が「絵文字」と「スタンプ」の2つになり、いずれ画像アップロード（Eの回）の
+   入口もここに並びうるため、絵文字に寄せた名前をやめた。
+   ボタンも .emoji-btn → .insert-btn。
+
+   【入口のボタンを増やさず、中で切り替える形（LINE と同じ）】
+   スタンプ用のボタンを縦にもう1つ積むと、狭い画面で入力欄が潰れる。
+   ボタンは1つのまま、パネルの中でタブを切り替える。
+
+   【参加者一覧・設定パネルとは、見た目を分けてある】
+   あちらはチャットログに覆いかぶさる形で、上端から下へ伸びる。
+   こちらは入力欄のすぐ上に、右寄せで出る。場所も形も違うので、
+   同じセレクタにまとめず、別に書いている。
+   ただし「同時に2つ開かない」という決まりは共通で、
+   JS側の panels 配列と setOpenPanel が、まとめて面倒を見ている。
+
+   【z-index（20）を持つ】
+   それまでは「.chat-input-row が .chat-log-wrapper より後ろにあるので自然と上に来る」
+   に任せていた。**こっそりの窓が入って、それだけでは足りなくなった**
+   （上の「重なり順の決め方」を参照） */
+.insert-panel {
+    display: none;
+    position: absolute;
+    bottom: 100%; /* この行の上端に、パネルの下端を合わせる */
+    right: 16px; /* .chat-input-row の左右パディングと同じ。ボタン側の端に揃う */
+    width: 340px;
+    max-width: calc(100% - 32px); /* 狭い画面でも、行の内側に収める */
+    /* 【高さは、中身（.insert-pane）が決める】
+       まで、ここに 420px と書いてあった。
+       中身の高さを --insert-pane-height で固定したので、この箱の高さはそこから決まり、
+       **同じ数字を2か所に書かなくてよくなった**（420 ＝ 346 ＋ 閉じる行44 ＋ すき間8
+       ＋ 上下の余白20 ＋ 枠線2。片方だけ直すとズレる形だった）。
+
+       ここに残す 60vh は「画面が低いときに、上へはみ出さない」ための頭打ちだけ。
+       頭打ちに当たったときは、.insert-pane が縮んで収まる */
+    max-height: 60vh;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 10px;
+    background-color: var(--color-background-dark);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); /* 下の内容から浮いていることを見せる */
+}
+
+    .insert-panel.is-open {
+        display: flex;
+    }
+
+    /* こっそりの窓から開いたときは、その窓の隣に出す（広い画面だけ。JS の positionPanel）。
+
+       【パネルは1つのまま。出す場所だけを変える】
+       窓と同じく position: fixed にして、JS が --ip-x / --ip-y に座標を入れる
+       （窓の --pt-x / --pt-y と同じやり方）。
+       上の bottom / right / margin-bottom は、入力行の上に出すためのものなので打ち消す。
+
+       【max-width の 100% は、fixed になると画面の幅を指す】
+       入力行の幅ではなくなるが、パネルは 340px なので、どちらでも効き方は変わらない */
+    .insert-panel.is-beside-window {
+        position: fixed;
+        left: var(--ip-x, 8px);
+        top: var(--ip-y, 8px);
+        right: auto;
+        bottom: auto;
+        margin-bottom: 0;
+    }
+
+/* === パネルの中のタブ（絵文字／スタンプ） ===
+
+   【置き場所は、閉じるボタンと同じ行の左端】開発者の指定。
+
+   【閉じるボタンの位置は、動かしていない】
+   .panel-close-row は3つのパネルで共通で、「3つとも同じ位置に閉じるボタン」という
+   決まりがある。あの行は justify-content: flex-end なので、
+   **タブ側に margin-right: auto を置くだけで、タブは左、閉じるは右端のまま**になる。
+   共通のほうの指定は、align-items: center を足しただけ
+   （他の2つは中身が閉じるボタン1つだけなので、見た目は1pxも変わらない） */
+.insert-tabs {
+    display: flex;
+    gap: 4px;
+    margin-right: auto;
+}
+
+/* タブ1つ。押せる高さは 44px（指で押す的として広く推奨される大きさ）。
+
+   【選ばれている／いないで、太さを変えないこと】
+   font-weight を切り替えると、選び直すたびに文字幅が変わって、
+   タブの位置がわずかに動く。太さは常に bold にして、
+   見分けは背景色・文字色・下線の3つでつけている。
+
+   【下線が要る理由・】
+   それまでは背景色と文字色だけで示していたが、**色だけに頼っていた。**
+   選ばれている側の背景（--color-accent-bg）とパネルの背景の明るさの比は
+   **1.29:1 しかなく**、縮小した画面では見分けがつかない
+   （実際、私が2回続けて逆に読み違えた）。色の見分けがつきにくい人には、なおさら届かない。
+   **下線は「色」ではなく「形」なので、色が見えなくても分かる。** */
+.insert-tab {
+    /* 【必須】下線のぶんを、この 44px の内側に収めるため。
+       content-box のままだと選ばれた側だけ 47px になり、
+       閉じるボタンの行ごと高さが動く */
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 0 14px;
+    background: none;
+
+    /* 【必ず、選ばれていないタブにも同じ太さの線を置くこと】
+       消したいときは太さを0にせず、色を transparent にする。
+       太さが変わると、選び直すたびにタブの高さが動く
+       （このファイルの --chat-btn-border-width と、まったく同じ考え方） */
+    border: none;
+    border-bottom: 3px solid transparent;
+
+    /* 下だけ角を落として、下線がまっすぐ引けるようにする
+       （8px のまま丸めると、下線が両端で巻き上がって線に見えない） */
+    border-radius: 8px 8px 0 0;
+
+    font-size: 13px;
+    font-weight: bold;
+    font-family: inherit;
+    color: var(--color-text-sub);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-bottom-color 0.2s;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .insert-tab:hover {
+            background-color: var(--color-background-mid);
+        }
+    }
+
+    /* 選ばれているほう。JS ではなく aria-selected を見ているので、
+       **見た目と読み上げが、ずれようがない**
+       （クラスと aria を別々に付け外しすると、いつか片方だけ忘れる）。
+
+       文字色（青）は、色が見える人にとっての見た目を変えないために残してある。
+       **下線は、そこへ足したもの**（色に頼らない手がかり） */
+    .insert-tab[aria-selected="true"] {
+        background-color: var(--color-accent-bg);
+        color: var(--color-accent);
+        border-bottom-color: var(--color-accent);
+    }
+
+    .insert-tab:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+/* タブの中身（絵文字の面／スタンプの面）。
+
+   【必須】display を書いた要素には hidden 属性が効かないので、
+   [hidden] の指定を必ず一緒に書くこと（このファイルの .emoji-search-results と同じ罠）。
+   書き忘れると、絵文字とスタンプが縦に並んで両方出る */
+.insert-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    /* 【高さを決め打ちにしてあるのが要点・】
+       ここが中身なりの高さだと、絵文字（ピッカーが入って高い）と
+       スタンプ（「準備中」の1行だけで低い）を行き来するたびに
+       **パネルの高さが変わって、画面が跳ねる**（実機で開発者が指摘）。
+
+       .insert-pane は2つの面が共有しているクラスなので、
+       **この1行だけで絵文字側もスタンプ側も同じ高さになる。**
+       数字を面ごとに書くと、片方だけ直されてズレる。
+
+       【スタンプ本体が入ったあとも、この形のままでよい】
+       中身が増えても高さは変わらない＝跳ねない。今のうちに入れておくのが得、
+       というのが開発者の判断。
+
+       flex-shrink は既定の1のまま（flex: 1 と書かないこと）。
+       画面が低くて .insert-panel の 60vh に当たったときは、ここが縮んで収まる */
+    height: var(--insert-pane-height);
+    min-height: 0;
+}
+
+    .insert-pane[hidden] {
+        display: none;
+    }
+
+/* 面に出す案内の1行（今は画像の面だけが使う。
+   まではスタンプの面の「準備中です」もこれだった） */
+.insert-pane-notice {
+    /* 面の高さが固定になったので、上に貼り付けず、空いた場所の中央へ置く
+       （margin: auto が、flex の中で上下の余白を等分する）。
+       上に貼り付いたままだと、下に広い空白が残って「読み込み中」に見える */
+    margin: auto 0;
+    padding: 8px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-text-quiet);
+}
+
+.emoji-tab-head {
+    flex-shrink: 0;
+}
+
+/* 自前の検索窓（Emoji Mart の内蔵の窓は使わない） */
+.emoji-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-input);
+    border-radius: 18px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+}
+
+    .emoji-search-input:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.15);
+    }
+
+/* 検索結果。1件が「文字そのもの」なので、ボタンを並べるだけで足りる
+   （機種依存でいくと決めたので、画像もSVGも要らない） */
+.emoji-search-results {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-content: flex-start;
+}
+
+    /* 【必須】display を書いた要素には、hidden 属性が効かない。
+
+       ブラウザが既定で当てている [hidden] { display: none } より、
+       こちらの display: flex のほうが強いため、JS で hidden を付けても消えない。
+       消えないと、検索結果とカテゴリのピッカーが縦に並んで両方出る。
+       display を指定するクラスを新しく作るときは、必ずこれを一緒に書くこと */
+    .emoji-search-results[hidden] {
+        display: none;
+    }
+
+.emoji-result-btn {
+    background: none;
+    border: 1px solid transparent; /* 押せる状態でも高さが変わらないよう、太さは常に確保する */
+    border-radius: 8px;
+    padding: 4px;
+    font-size: 24px;
+    line-height: 1.2;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .emoji-result-btn:hover {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+    .emoji-result-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+/* 見つからなかったときの1行 */
+.emoji-no-result {
+    color: var(--color-text-quiet);
+    font-size: 13px;
+    padding: 8px 4px;
+    margin: 0;
+}
+
+/* Emoji Mart のピッカーが入る場所。
+   ピッカー側は dynamicWidth: true にしてあるので、ここの幅に合わせて中身が並ぶ */
+.emoji-picker-host {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+    /* こちらは display を指定していないので hidden はそのまま効くが、
+       上の .emoji-search-results と対で読めるように、明示しておく */
+    .emoji-picker-host[hidden] {
+        display: none;
+    }
+
+    /* ピッカー本体（カスタム要素）を、この箱いっぱいに広げる
+
+       【min-height は小さくしてある】
+       それまで 260px あり、ピッカーは箱より小さくならなかった。
+       画面が低いとパネルの面を縮めるようになった（ログを押し上げても、スタンプ1つぶんは
+       残すため）ので、箱に合わせて縮むようにした。中はピッカー自身がスクロールする。
+       120px は「カテゴリの帯＋絵文字1〜2行」が残る高さ */
+    .emoji-picker-host em-emoji-picker {
+        width: 100%;
+        height: 100%;
+        min-height: 120px;
+    }
+
+/* 読み込み中・読み込めなかったときの1行。
+   何も出ていないときは、場所を取らない */
+.emoji-tab-status {
+    margin: 0;
+    padding: 4px;
+    font-size: 13px;
+    color: var(--color-text-quiet);
+}
+
+    .emoji-tab-status:empty {
+        display: none;
+    }
+
+    .emoji-tab-status.is-error {
+        color: var(--color-error-text);
+        font-weight: bold;
+    }
+
+/* メッセージ入力欄。高さはCSSだけで決めている。
+
+、1行から始めて中身に応じて伸ばす形（LINE式）を一度入れたが、
+   戻した（JS側で height を書き換える形になり、box-sizing の指定も要った）。 */
+.message-input {
+    flex: 1;
+    border: 1px solid var(--color-border-input);
+    border-radius: 24px;
+    padding: 12px 18px;
+    font-size: 15px;
+    outline: none;
+    font-family: inherit; /* textareaはデフォルトでフォントが継承されないため必須 */
+    resize: none; /* ユーザーがドラッグしてサイズ変更できないようにする */
+    max-height: 78px; /* 3行分くらいの高さで頭打ちにする（1行約22px×3+余白） */
+    line-height: 1.5;
+    overflow-y: auto; /* 3行を超えたら、テキストエリア内でスクロール */
+}
+
+    .message-input:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.15);
+    }
+
+/* 大きさは、上の「0. ボタンの大きさ」の変数から取る（退室ボタンと揃えるため）。
+   色・角の丸みは、このボタン独自のもの */
+.send-btn {
+    background-color: var(--color-accent);
+    color: #FFFFFF;
+    border: var(--chat-btn-border-width) solid transparent; /* 枠線は見せないが、
+        退室ボタンと高さを揃えるため、太さの分だけは確保しておく（border: noneにしない） */
+    border-radius: 24px;
+    padding: var(--chat-btn-padding);
+    font-size: var(--chat-btn-font-size);
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s;
+}
+
+    /* マウスがある環境だけホバーを効かせる（理由は上の「0-2. ホバーの効かせ方」）。
+       :not(:disabled) を付けているのは、押せない状態のボタンにマウスを乗せたときに
+       色が変わって「押せそうに見える」のを防ぐため
+       （disabledな要素でも、:hover 自体は当たるブラウザがある） */
+    @media (hover: hover) and (pointer: fine) {
+        .send-btn:hover:not(:disabled) {
+            background-color: var(--color-accent-dark);
+        }
+    }
+
+/* 押せない状態（接続が切れている／文字数が上限を超えている）。
+   背景色を明示したボタンは、disabledにしても見た目がまったく変わらないため、
+   ここで「押せない」ことを目に見える形にしておく */
+.send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* ============================================
+   こっそり話す（秘密トーク）の窓
+   ============================================
+
+   【この回は、素っ気ないままにしてある】
+   ゴールは「往復が成立すること」で、窓の作り込みは次の回である。
+   次の回で入るのは、ドラッグ移動・カスケード（少しずつずらして重ねる）・
+   スマホでのタブ切り替え・配色（半透明で暗く）・「自動で開く」のオン/オフ。
+
+   【色は theme.css の変数だけを使っている】
+   窓専用の配色は次の回で theme.css へ足す。ここで直接 #xxxxxx を書かないこと */
+
+/* アイコンの大きさ。
+
+   【1か所だけで決める】各所に数値を書かないこと。
+   本体の --message-avatar-size（20px）と揃えてあるが、
+   窓の広さは本体と違うので、別の変数にして別々に動かせるようにしてある */
+:root {
+    --private-talk-avatar-size: 20px;
+
+    /* 狭い画面（スマホ）での、窓の高さ。層（＝チャットログの領域）に対する割合。
+
+       【窓を開いている間は、ずっと全面】
+：スマホでこっそりの窓を開いたら全面にする。上のバー（部屋名・設定・退室）だけ残し、
+       本体の入力欄なども消す。**窓を開いている間は、本体の部屋では発言しない**ので、
+       部屋の様子は見えなくてよい（窓は透けるので、下に部屋があることは伝わる）。
+       それまでは「普段は72%／こっそりに打っている間だけ100%」の2段だった
+       （打っている間の印 is-private-typing は、この回で is-private-full に置き換えて消した）。
+
+       【100% ＝ タブの帯の下、層のいちばん下まで】
+       実際の高さは「この値」と「タブの帯を除いた残り全部」の小さいほうになる（min() で押さえてある）。
+       本体の入力欄が隠れるぶん層が下へ伸びるので、窓の入力行は画面の下端に来る。
+       **実機で見て決める値**なので、ここ1か所だけにしてある
+       （「本体の様子も少しは見たい」となったら、90% などへ下げればよい）。
+
+       【上限ではなく、高さそのもの】
+       max-height（上限）だと、**やりとりがまだ無い窓が中身なりに縮む**（375×812 で 141px）。
+       height にしてあるので、最初から同じ高さで出る */
+    --private-talk-height-narrow: 100%;
+
+    /* 狭い画面で、窓をどれだけ下げて置くか（層のいちばん上にある、タブの帯のぶん）。
+       窓の置き場所（margin-top）と、窓の高さの2か所で使う */
+    --private-talk-tabs-offset: 41px;
+}
+
+/* 窓を置く層。チャットログの上に覆いかぶさる。
+
+   【pointer-events: none にしてあるのが要点である】
+   層そのものはチャットログ全面を覆うが、窓の無いところはクリックが
+   下（チャットログ）へ抜ける。none にしないと、窓を1つ開いただけで
+   **チャットログのスクロールも、パネルの操作もできなくなる** */
+/* === こっそりの中だけ、色を暗いほうへ入れ替える ===
+
+   【中身のCSSは1行も触っていない】
+   名前・本文・時刻・お知らせ・タブは、これまでどおり
+   --color-text-strong などを見ている。**その変数の中身を、ここで差し替えている。**
+   部品ごとに色を書き直すと、明るいほうと暗いほうで2組のCSSを抱えることになる。
+
+   【窓ではなく、層に置くこと】
+   狭い画面のタブの帯（.private-talk-tabs）は**窓の外**にある。
+   窓に置くとタブだけ明るいまま取り残される（実際にそうなった）。
+   層に置けば、こっそりに関わるものが全部この中に入る
+
+   【値そのものは theme.css にある】
+   このファイルに色コードを書かない、という決まりのとおり。
+   コントラスト比の実測も、あちらのコメントに書いてある。
+
+   【--color-accent は入れ替えないこと】
+   送信ボタン・選ばれたタブ・窓のふちには**白い文字が乗る**ので、
+   明るくすると逆に読めなくなる（理由と実測は theme.css 側に書いてある）。
+   **見出しの帯だけは別の色**（--color-private-head）を直接持たせている——
+   帯までテーマカラーだと窓の頭がいちばん目立ってしまい、
+   「濃くて暗い」という狙いと逆を向くため */
+.private-talk-layer {
+    --color-background-dark: var(--color-private-frame);
+    --color-background-mid: var(--color-private-bg);
+    --color-text-strong: var(--color-private-text);
+    --color-text-quiet: var(--color-private-quiet);
+    --color-text-muted: var(--color-private-quiet);
+    --color-border: var(--color-private-border);
+    --color-border-input: var(--color-private-border);
+    --color-error-text: var(--color-private-error);
+    /* 発言の中のリンク（オートリンク）。暗い地の上では明るい青へ */
+    --color-link: var(--color-private-link);
+    --color-link-hover: var(--color-private-link-hover);
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+
+    /* 重なり順。下の「重なり順の決め方」を参照 */
+    z-index: 10;
+}
+
+/* ============================================
+   重なり順の決め方
+   ============================================
+
+   それまでは**DOMに置いた順**だけで決めていた。窓の層がパネルより後ろにあるため、
+   **参加者一覧や設定を開いても、こっそりの窓の裏に潜って操作できなかった**
+   （本番の実機で発覚）。
+
+   数を配るのは、この4段だけ。
+
+       10  こっそりの窓（層ごと）
+       15  こっそりの未読の印（バーからぶら下がって、ログの上に浮く）
+       20  パネル（参加者一覧・設定・発言に入れるもの）
+       25  ノックの返事待ち（部屋の管理人だけ）
+       30  新着あり
+
+   【ノックが、パネルより手前にある理由】
+   返事には60秒の期限がある。パネルを開いている間に届いて、その裏に隠れると、気づかないまま時間切れになる。
+   「新着あり」より奥なのは、ノックはログの上端、新着ありは下端に出て、重ならないため（念のため）
+
+   【未読の印が、パネルより奥にある理由】
+   パネルを開いているときは、**誰から来たのかが分かる一覧の印のほう**が要る。
+   外の印は「来ている」という事実しか伝えないので、譲ってよい
+
+   【窓どうしの前後】（変えた）
+   層の中は「ふつう」と「手前（.is-active、z-index: 1）」の2値だけ。
+   窓が増えても値を配らずに済む。手前でない窓どうしは、開いた順（DOMの順）のまま。
+   それまでは JS の setActive が選ばれた窓を末尾へ移していたが、押している最中に
+   要素が入れ替わって **裏の窓のボタンが1度目で効かなかった** ので、並べ直しをやめた。
+
+   【新着ありが、いちばん上にある理由】
+   パネルを開いている最中に新着が来ても、押せる位置に残しておきたいため
+   （元からDOMの順でそうしてあったものを、数で書き直しただけ） */
+.participant-panel.is-open,
+.settings-panel.is-open,
+.insert-panel.is-open {
+    z-index: 20;
+}
+
+.new-message-btn {
+    z-index: 30;
+}
+
+.knock-requests {
+    z-index: 25;
+}
+
+/* === 広い画面では、層を画面いっぱいにする（窓を画面の外まで動かせるように） ===
+
+   【position: fixed であることが要点】
+   absolute のまま body 直下へ移すと、**窓を外へ出したぶんだけページが広がって
+   横スクロールバーが出る**（実測。1000px幅で、右へ200px出した窓が
+   scrollWidth を 1000 → 1520 へ広げた）。
+   fixed なら、はみ出してもスクロールできる範囲は増えない（同じ実測で確認）。
+   **overflow: hidden は要らない**——fixed だけで出なくなる。
+
+   【罠】祖先に transform / filter / will-change があると、fixed の基準が
+   その祖先になってしまう。**今は1つも無いことを確認済み**（html / body /
+   .chat-room / .chat-log-wrapper の4つとも none）。
+   吹き出しのしっぽは transform を使っているが、あれは層の子孫なので関係ない。
+   **将来 .chat-room などにアニメーションを足すときは、ここへ戻ること**
+
+   【狭い画面では absolute のまま】
+   スマホは覆いかぶさる形で、動かさない。fixed にすると層が画面全体になり、
+   **プロフィールバーと入力行まで窓が覆ってしまう**
+   （打っていないときの本体の入力行が、使えなくなる） */
+@media (min-width: 701px) {
+    .private-talk-layer {
+        position: fixed;
+    }
+}
+
+/* 窓1つ。
+
+   【pointer-events を戻すこと】
+   親が none なので、ここで auto に戻さないと窓自体が操作できない
+
+   【位置はJS側が --pt-x / --pt-y に入れる】
+   広い画面では下寄せから始めて、2枚目以降は上へずらして重ねる。
+   横の置き場所と、下寄せがはなくこちらの解釈だったことは、
+   JS の placeWindow のコメントにある（訂正） */
+.private-talk-window {
+    pointer-events: auto;
+    position: absolute;
+    left: var(--pt-x, 0px);
+    top: var(--pt-y, 0px);
+    width: min(320px, 100%);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-background-dark);
+    border: 2px solid var(--color-accent);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+
+    /* 中身が増えても、この窓だけが伸び続けないようにする */
+    max-height: 260px;
+}
+
+    /* 今いちばん手前の窓。**狭い画面では、これだけが見える**（下のメディアクエリ）。
+
+       【z-index は 1 の1つだけ】
+       手前の窓は常に1枚なので、「ふつう（auto）」と「手前（1）」の2値で足りる。
+       層（.private-talk-layer）が z-index を持つので、ここの値は層の中だけで効き、
+       パネル（20）や新着あり（30）との前後には関わらない。
+       **DOMを並べ直さない**ので、押している最中のボタンの click が途切れない
+       （上の「重なり順の決め方」を参照） */
+    .private-talk-window.is-active {
+        z-index: 1;
+    }
+
+/* 狭い画面（スマホ）で、相手の名前を並べて切り替えるタブ。
+
+   【広い画面では出さない】窓を並べて置けるので、切り替える必要が無い */
+.private-talk-tabs {
+    display: none;
+}
+
+/* まだ見ていない発言がある印（タブの側）。
+   【バーの上の「こっそり未読」と同じ見た目】（それまでは淡い赤の ● だった）
+   要望：狭い画面のタブ（相手ごと）にも赤い未読の印を出す。
+   ● は読み上げで「黒丸」と読まれるうえ、淡い赤で目立たなかった。
+   文字で「未読」と書いてあるので、色だけで伝えていない（読み上げでは「花子 未読」になる）。
+   地の赤は --color-unread-mark（層の中でも明るい赤に上書きされない。theme.css 側に理由） */
+.private-talk-tab-unread {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background-color: var(--color-unread-mark);
+    color: #FFFFFF;
+    font-size: 10px;
+    line-height: 1.5;
+    vertical-align: 1px;
+}
+
+/* === 狭い画面（スマホ） === */
+
+/* 【幅の数字は、JS側の PT_NARROW_MEDIA と必ず同じにすること】
+   片方だけ変えると、タブは出ているのに窓が重ならない、といった
+   食い違いが起きる。ラウンジの並べ替えと同じ 700px に揃えてある */
+@media (max-width: 700px) {
+
+    /* 覆いかぶさる形。一度に1つだけ見せる */
+    .private-talk-tabs {
+        display: flex;
+        pointer-events: auto;
+        gap: 4px;
+        padding: 4px;
+        overflow-x: auto;
+        background-color: var(--color-background-dark);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+        /* 【罠】display を書いた要素には、hidden 属性が効かない。
+
+           ブラウザ既定の [hidden] { display: none } より、上の指定のほうが強い。
+           JS は窓が0枚のとき hidden を付けるが、**狭い画面ではそれが効かず、
+           空のタブの帯が9px、チャットログの上に residue として残っていた**
+           （実測。しかも pointer-events: auto なので、
+           その9pxの下にある行に触れない）。
+
+           **display を指定するクラスを作ったら、[hidden] も一緒に書くこと。**
+           .emoji-search-results ／ .insert-pane と、まったく同じ罠である */
+        .private-talk-tabs[hidden] {
+            display: none;
+        }
+
+    .private-talk-tab {
+        flex-shrink: 0;
+        background-color: var(--color-background-mid);
+        color: var(--color-text-strong);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+
+        /* 【罠】選ばれているかで太さを変えないこと。
+           選び直すたびに幅が動いて、タブの位置がずれる
+           （.insert-tab とまったく同じ理由） */
+        font-weight: bold;
+    }
+
+        /* 【色だけで「選ばれている」を示さないこと】
+           下線は「色」ではなく「形」なので、色が見えなくても分かる
+           （.insert-tab と同じ考え方） */
+        .private-talk-tab[aria-selected="true"] {
+            background-color: var(--color-accent);
+            color: #FFFFFF;
+        }
+
+    /* 【位置は JS の値を使わない】
+       狭いときは覆いかぶさる形なので、タブの下いっぱいに広げる。
+       --pt-x / --pt-y は広い画面のためのものなので、ここでは上書きする */
+    /* 【高さを決めてある】
+       値は :root の --private-talk-height-narrow の1か所（100%＝全面）。
+
+       【全面にしても、パネルと参加者一覧・設定は窓より手前に出る】
+       「窓が画面いっぱいになって、パネルが裏に潜る」を直したときの
+       重なり順（パネル 20 ＞ 窓の層 10）が、そのまま効いている。
+       入れるもののパネルが窓の下半分を覆うぶんは、窓のログを押し上げて見せる
+       （JS の InsertPanel.updateLogPush。部屋あてと同じ仕組み）。
+
+       【上限（max-height）ではなく、高さ（height）にしてある】
+       上限だと、やりとりがまだ無い窓が中身なりに縮む（141px）。
+       **土台の .private-talk-window の max-height: 260px（広い画面の既定）を
+       ここで外すこと**——外さないと、そちらが勝って 260px で頭打ちになる。
+
+       【min() の右側＝層からタブの帯を除いた残り全部】
+       margin-top でタブのぶん下げてあるので、残りより高くすると層の下へはみ出す */
+    .private-talk-window {
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: auto;
+        width: auto;
+        max-height: none;
+        height: min(var(--private-talk-height-narrow),
+                    calc(100% - var(--private-talk-tabs-offset)));
+
+        /* タブのぶんだけ下げる（タブは層のいちばん上に置いてある） */
+        margin-top: var(--private-talk-tabs-offset);
+
+        /* 選ばれていない窓は出さない。タブで切り替える */
+        display: none;
+    }
+
+        .private-talk-window.is-active {
+            display: flex;
+        }
+
+    /* 覆いかぶさる形では、ログの高さは残り全部でよい */
+    .private-talk-log {
+        max-height: none;
+    }
+}
+
+/* === マウスのある環境だけ、見出しの帯を掴めるようにする ===
+
+   【タッチの端末では動かさない】（開発者の指定）
+   スマホは覆いかぶさる形のままにする。
+   JS側の PT_DRAG_MEDIA と、まったく同じ問い合わせにしてある */
+@media (hover: hover) and (pointer: fine) and (min-width: 701px) {
+
+    .private-talk-head {
+        cursor: move;
+
+        /* 掴んで動かしている間に、文字が選択されるのを防ぐ */
+        user-select: none;
+    }
+
+        /* ボタンの上は、掴む場所ではない */
+        .private-talk-head button {
+            cursor: pointer;
+        }
+}
+
+/* 見出し。
+
+   【「こっそり」と文字で出していることに意味がある】
+   次の回で窓を暗い配色にするが、**色だけで「秘密っぽさ」を伝えない**。
+   色の見分けがつきにくい人には届かないため */
+/* === 窓の足もと。透け具合のつまみと、断られた理由が1行を分け合う ===
+
+   【行はいつも在る】
+   中身が空のときだけ高さ0にすると、**理由が出た瞬間に窓の中が押し上げられる。**
+   本体の入力欄の下（改行の案内＋文字数）を、常に置いてあるのと同じ考え方 */
+.private-talk-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    min-height: 20px;
+    flex-shrink: 0;
+}
+
+    /* === 断られた理由が出ている間だけ、ログと同じ地を敷く===
+
+       【なぜ要るのか】
+       足もとの行に地は無いので、そこにあるのは**窓の枠**である。
+       枠はログよりずっと透けるので（既定で 0.70 対 0.88）、
+       **同じ色でも比がまるで違う。**
+       実測（既定・白に重ねた最悪の場合）＝
+       枠の上では赤（`--color-private-error`）が **3.33**、
+       ログと同じ地の上なら **5.90**。
+
+       【色は1つも変えない】
+       赤を薄くして基準を満たす案もあったが、開発者が却下＝
+       **淡いピンクになって「エラーだ」と色から伝わらなくなる**ため。
+       **地のほうを変えれば、赤は赤のまま読めるようになる。**
+
+       【常には敷かない】
+       同じ行にある「背景を透かす」は、枠の上でも 5.52 で基準を満たしている。
+       **割っているのは赤だけ**なので、常に敷く理由が無い。
+       常に敷くと、背景の透け感が1行ぶん減る。
+       **地が変わること自体が「何か起きた」と伝える**ので、そこも兼ねている。
+
+       【高さは変えないこと】
+       この行が常に高さを取っているのは、
+       **理由が出た瞬間に窓の中が押し上げられるのを防ぐため**である。
+       ここで padding や min-height を触ると、その手当てが台無しになる。
+       **地の色以外は、何も変えない**
+
+       【文字のほうを動かす手もある（今は採っていない）】
+       要望：背景が薄いときは文字を濃く、背景が濃いときは文字を薄く。
+       これは名前の色（`readableOnPrivateBg`）で既に動いている仕組みそのもので、
+       **地を敷く形が気に入らなければ、そちらへ切り替えるのは安い。**
+       詳しくは 「入れた形」 */
+    .private-talk-foot.is-showing-reject {
+        background-color: var(--color-background-mid);
+    }
+
+/* === つまみと、その名前（名前を足した）===
+
+   【名前とつまみは、1つの箱にまとめてある】
+   断られた理由が出たら、**名前ごと**引っ込める（JS側の showReject）。
+   別々に出し入れすると、いつか片方だけ忘れる
+
+   【罠】`display` を書いた要素には、ブラウザ既定の `[hidden]` が効かない。
+   `.emoji-search-results` ／ `.insert-pane` ／ `.private-talk-tabs` と同じ罠で、
+   下の1行を書かないと**理由が出てもつまみが引っ込まず、両方が潰れる**。
+   これで4件目なので、`display` を書いたら `[hidden]` も一緒に書くこと */
+.private-talk-seethrough-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    /* 理由（`flex: 1`）に余りを持たせるので、こちらは縮まない */
+    flex-shrink: 0;
+
+    /* 「自動で開く」もこの箱に入った。窓を細くして入りきらないときは、箱の中で折り返す
+       （イントリンシック・デザイン。幅の数字は書かない）。320px の窓では1行に入る。
+       折り返すのは、窓を手で細くしたときだけ */
+    flex-wrap: wrap;
+    row-gap: 2px;
+    max-width: 100%;
+}
+
+    .private-talk-seethrough-box[hidden] {
+        display: none;
+    }
+
+/* つまみの名前（要望：つまみには説明を付ける）。
+
+   【必読】ここは「ログの地」ではなく「窓の枠」の上である
+
+   足もとの行に背景色は無いので、下にあるのは `--color-private-frame`（窓の枠）で、
+   **枠はログよりずっと透ける**（既定で 0.70 対 0.88）。
+   測ったコントラスト比は、どれも**ログの地の上**の数字なので、
+   **そのまま当てはまらない。** 実測（既定・白に重ねた最悪の場合）＝
+
+       枠を白に重ねた地   rgb(88, 96, 112)
+       --color-text-quiet （時刻と同じ色）  3.09  ← 基準4.5を割る
+       --color-text-strong（本文と同じ色）  5.52  ← これを使う
+
+   **時刻と同じ扱いにしたくなるが、それでは読めない。**
+   小ささで控えめに見せて、色は本文と同じ強さにしてある
+
+   【折り返させない】
+   折り返すと足もとの行が2行になり、そのぶん窓の中が押し上げられる
+   （この行を常に置いてあるのは、まさにそれを防ぐためである） */
+.private-talk-seethrough-label {
+    font-size: 10px;
+    color: var(--color-text-strong);
+    white-space: nowrap;
+
+    /* つまみを摘まみ損ねたときに、文字が選択されるのを防ぐ */
+    user-select: none;
+}
+
+/* 透け具合のつまみ。
+
+   【幅を決め打ちにしてある】
+   `flex: 1` にすると理由の場所を食う。**縮まない固定幅**にして、
+   余りは理由（`flex: 1`）に持たせる。
+   72px 以下だと、5刻みのつまみが摘まみにくくなる
+
+   【帯（見出し）には置けなかった】
+   実測＝帯へ入れると、題が 145px → 74px に潰れて
+   「花子さんと こ…」になった。題は「どの窓か」を示す唯一の場所である */
+.private-talk-seethrough {
+    flex-shrink: 0;
+    width: 72px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--color-accent);
+}
+
+/* 見出しの帯。**ここだけ --color-accent を使わない**（上の窓のコメントを参照）。
+   窓の中でいちばん濃い色にして、頭であることを見た目でも示す */
+.private-talk-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background-color: var(--color-private-head);
+    color: #FFFFFF;
+    border-radius: 6px 6px 0 0;
+    flex-shrink: 0;
+}
+
+/* 見出しの文言と、その下の行の相手のトリップをまとめる箱。
+   帯の横並びの中で、残りの幅を全部取る（それまで .private-talk-title が持っていた flex: 1 を、ここへ移した）。
+   相手がトリップを付けていなければ、中は題だけで、帯の高さは今までと同じ */
+.private-talk-heading {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.private-talk-title {
+    font-size: 13px;
+    font-weight: bold;
+
+    /* 長い名前でも、閉じるボタンを押し出さない */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+/* 見出しの下の行の、相手のトリップ（こっそりの窓のトリップは、ここ1か所だけ）。
+   大きさ・書体は .trip-code（12px・等幅）のまま。色は theme.css の .private-talk-layer のルール
+   （暗い地用の16色）。見出しの帯は窓の中でいちばん濃い地なので、ログの上より読みやすい */
+.private-talk-head-trip {
+    display: block;
+    line-height: 1.2;
+    margin-top: 1px;
+}
+
+/* 窓の下の行にある「自動で開く：オン／オフ」（見出しの帯から移した。見た目は今までのまま）。
+   【下の行の地は「窓の枠」】白い文字・白い枠のままで読める（枠を白に重ねた最悪の地 rgb(88, 96, 112) の上で 6.4:1）。
+
+   【文字で状態を出していることに意味がある】
+   絵や名前だけのボタンにすると、何が起きるのか伝わらない
+   （指摘：「チェンジ」という名前では何が起きるか分からない） */
+.private-talk-autoopen {
+    flex-shrink: 0;
+    background-color: transparent;
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 10px;
+    line-height: 1.3;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+    /* === オンのときは、はっきり見た目を変える ===
+
+       それまでは**オンでもオフでも同じ見た目**で、
+       変わるのは文字（「自動で開く：オン／オフ」）だけだった。
+       本番の実機で「どっちの時も色が一緒なので分かりにくい」となった。
+
+       【設定パネルのトグルとは、別の作りにしてある】
+       あちらは64pxのスイッチで、320pxしかないこの見出しには入らない
+       （題名と閉じるボタンを押しのけてしまう）。
+       **色の反転で「押されている」を表す**、というボタンとしての形にした。
+
+       【色だけで伝えていない】文字も「：オン」「：オフ」と変わる。
+       色の見分けがつきにくい人にも届く（タブの下線と同じ考え方） */
+    .private-talk-autoopen[aria-pressed="true"] {
+        background-color: #FFFFFF;
+        color: var(--color-accent);
+        font-weight: bold;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .private-talk-autoopen:hover {
+            background-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .private-talk-autoopen[aria-pressed="true"]:hover {
+            background-color: rgba(255, 255, 255, 0.85);
+        }
+    }
+
+.private-talk-close {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .private-talk-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    }
+
+/* やりとりの並ぶところ */
+.private-talk-log {
+    flex: 1;
+    overflow-y: auto;
+
+    /* 【この1行を消さないこと】ログの中の絶対配置のものの基準を、このログの枠にする
+
+       理由は部屋のログ（.chat-log）の同じ指定と同じ。枠が切り取り、一緒にスクロールさせるのは、
+       位置の基準がこの枠か、その内側にあるものだけである。
+       今この窓の行に絶対配置のものは無い（トリップは 見出しに1か所だけ）ので、**今は何も変わらない。
+       行の中に .visually-hidden などを足した日に、それがログと一緒にスクロールせず窓の中に取り残されるのを、先に防いでおく。**
+       （基準は窓（.private-talk-window）になるので、ページまでは伸びない。そのぶん気づきにくい）
+       z-index は付けないこと */
+    position: relative;
+
+    padding: 6px 8px;
+
+    /* 入れるもののパネルが、全面の窓の下半分を覆っているぶんの押し上げ。
+       --pt-log-push は JS（InsertPanel.updateLogPush）がこの要素に直接入れる。部屋あての --log-push と同じ仕組み。
+
+       【部屋の --log-push と、名前を分けてあること】
+       カスタムプロパティは親から受け継がれる。部屋の --log-push は .chat-log-wrapper に入り、
+       この窓はその中にあるので、同じ名前を読むと**部屋あてに開いただけで、窓のログまで押し上げられる** */
+    padding-bottom: calc(6px + var(--pt-log-push, 0px));
+    background-color: var(--color-background-mid);
+    font-size: 13px;
+    color: var(--color-text-strong);
+}
+
+/* 1行。アイコン・名前・本文・時刻の横並び。
+
+   【時刻も出している】（判断を覆した）
+   「窓が狭いので時刻は出さず、title 属性に残す」としていたが、
+   実機を見た開発者の要望で表示する形にした（`.private-talk-time`）。
+   **title 属性のほうも、そのまま残してある。**
+
+   【上端で揃える】
+   複数行の発言のとき、アイコンが真ん中まで下がると、
+   どの行の発言者なのかが読みにくくなる。名前と本文の line-height を
+   アイコンと同じ高さにしてあるので、1行目とアイコンがきれいに並ぶ */
+.private-talk-row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    padding: 2px 0;
+}
+
+/* アイコン。本体の .message-avatar と同じ考え方で、
+   大きさは外側のdivが決め、SVGは親いっぱいに広がる
+   （SVGに直接widthを書いても効かないことがある） */
+.private-talk-avatar {
+    flex-shrink: 0;
+    width: var(--private-talk-avatar-size);
+    height: var(--private-talk-avatar-size);
+}
+
+    .private-talk-avatar svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+/* 名前。
+
+   【その人が選んだ色を付ける】
+   色はJS側がインラインstyleで入れる（本体の吹き出しの縁と同じ形）。
+   ここで色を決めないこと——決めると、インラインとの二重管理になる。
+
+   本体では色を持つのはアイコンだけで、名前は灰色である。
+   ここは狭い窓に1行ずつ並ぶ形なので、名前にも色を付けている
+   （指摘：色を選ばせているのに、こちらで色を固定するのはおかしい）。
+   本体と少し違う見え方になることは、承知のうえで選んでいる。
+   【行ごとには、トリップを出さない】（相手の行の名前の下に出していた）
+   相手のトリップは、窓の見出しに1か所だけ（.private-talk-head-trip） */
+.private-talk-name {
+    flex-shrink: 0;
+    font-weight: bold;
+    max-width: 6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    /* アイコンと1行目が揃うように、行の高さをアイコンに合わせる */
+    line-height: var(--private-talk-avatar-size);
+}
+
+/* 【white-space: pre-wrap】改行を含む発言を、そのまま出すため。
+   あわせて overflow-wrap を入れておかないと、長い英数字が横へはみ出す */
+.private-talk-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: var(--private-talk-avatar-size);
+
+    /* 【時刻を右端へ追いやるために、本文が残り幅を取る】
+       flex を書かないと本文が中身なりの幅になり、時刻が本文のすぐ隣に来る */
+    flex: 1;
+    min-width: 0;
+}
+
+/* 時刻（「出さない」を覆して足した）。
+
+   【本文の右下に置く】
+   名前の右に並べると、名前が長い人のところで**本文の折り返しが1行増える**。
+   右端へ寄せておけば、短い発言では余白に収まり、長い発言でも
+   本文が使える幅は 36px ほどしか減らない。
+
+   【align-self: flex-end】
+   行は上端で揃えてあるが、時刻だけは下端に置く。
+   複数行の発言で、時刻が1行目の右上に浮くのを避けるため。
+
+   【色は --color-text-quiet まで。--color-text-muted にしないこと】
+   ログの地は --color-background-mid。muted では基準（4.5:1）を割る
+   （本体の文字数カウンタで測ったのと、まったく同じ関係） */
+.private-talk-time {
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--color-text-quiet);
+    white-space: nowrap;
+}
+
+/* 日付の区切りと、窓の中のお知らせ（退室・入室） */
+.private-talk-date,
+.private-talk-notice {
+    text-align: center;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    padding: 4px 0;
+}
+
+/* 断られた理由。空のときは高さを持たない */
+/* 断られた理由。足もとの行の、余った幅を全部使う（右寄せ）。
+   つまみと同じ行なので、理由が出ているあいだ つまみは引っ込む（JS側） */
+.private-talk-reject {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+    color: var(--color-error-text);
+    font-size: 12px;
+}
+
+    .private-talk-reject:empty {
+        display: none;
+    }
+
+/* === スマホ（狭い画面）では、窓の下の行を1段大きくする ===
+
+   要望：「背景を透かす」と「自動で開く」を、スマホではもう少し大きく。
+   PC は今のまま（窓を手で動かす小さな窓なので、詰めた形が合っている）。
+
+   【行の高さも1段上げる】文字だけ大きくすると、つまみ・ボタンが行からはみ出して、窓の中を押し上げる。
+   行の高さ（min-height）を、**断られた理由が2行になっても収まる高さ**にしてある
+   ＝理由の 12px × 行の高さ 1.3 × 2行 ＝ 31.2px ≦ 32px。理由が出ても消えても、行の高さは変わらない（跳ねない。手当てのまま）。
+   3行になるほど長い理由は、今は無い（いちばん長いのは「送信の間隔が短すぎます。…」で、360px の窓で2行）。
+
+   【700px は、こっそりの窓の狭い画面の境目（PT_NARROW_MEDIA）と同じ】片方だけ変えないこと */
+@media (max-width: 700px) {
+
+    .private-talk-foot {
+        min-height: 32px;
+        padding: 4px 8px;
+        gap: 6px;
+    }
+
+    .private-talk-seethrough-box {
+        gap: 6px;
+        row-gap: 4px;
+    }
+
+    /* 【12px】10px → 12px。13px にすると、320px の画面で「自動で開く」が次の行へ落ちて、
+       理由が出たときに行の高さが変わった（62px → 40px。開発機で測った） */
+    .private-talk-seethrough-label {
+        font-size: 12px;
+    }
+
+    /* つまみも指で摘まみやすく（幅 72px → 88px、高さ 16px → 24px） */
+    .private-talk-seethrough {
+        width: 88px;
+        height: 24px;
+    }
+
+    .private-talk-autoopen {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    .private-talk-reject {
+        line-height: 1.3;
+    }
+
+}
+
+.private-talk-input-row {
+    display: flex;
+    gap: 6px;
+    padding: 6px 8px;
+    flex-shrink: 0;
+}
+
+.private-talk-input {
+    flex: 1;
+    min-width: 0;
+    resize: none;
+
+    /* 【必須】これが無いと、入力欄だけ別のフォントになる */
+    font-family: inherit;
+    font-size: 14px;
+    padding: 4px 6px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.private-talk-send {
+    flex-shrink: 0;
+    background-color: var(--color-accent);
+    color: #FFFFFF;
+    font-weight: bold;
+    border: var(--chat-btn-border-width) solid transparent;
+    border-radius: 6px;
+    padding: var(--chat-btn-padding);
+    font-size: var(--chat-btn-font-size);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+    @media (hover: hover) and (pointer: fine) {
+        .private-talk-send:hover:not(:disabled) {
+            background-color: var(--color-accent-dark);
+        }
+    }
+
+/* 押せない状態（相手が退室した／接続が切れている）。
+   背景色を明示したボタンは、disabledにしても見た目が変わらないため、
+   ここで「押せない」ことを目に見える形にしておく（.send-btn と同じ扱い） */
+.private-talk-send:disabled,
+.private-talk-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* === 広い画面での、窓の大きさ ===
+
+   【必ず、上の .private-talk-window / .private-talk-input-row より後ろに置くこと】
+   同じ強さの指定どうしは、**後に書いたほうが勝つ**。
+   前に置くと、あとから来る max-height: 260px と padding に負けて、
+   **大きさを変えられないまま、掴む角も出ない**（実際に一度そうなった） */
+@media (min-width: 701px) {
+
+    /* === 窓の大きさを、利用者が変えられるようにする ===
+
+。ブラウザに元からある仕組み（resize）に乗せてある。
+
+       【max-height ではなく height にしてある】
+       resize は要素に width / height を直接書き込む。
+       max-height を残したままだと**そちらが勝って、縦に広げられない**。
+       既定の 260px は、変えていない
+
+       【overflow が visible のままでは、resize が効かない】
+       掴む角そのものが出ない。窓は中でスクロールさせるので hidden でよい
+
+       【上限は、ここには書かない】
+       「どこまで大きくしてよいか」は**窓が今どこに居るかで変わる**ので、
+       JS側（applySizeLimit）が窓ごとに書き込む。
+       ここに `calc(100vw - 16px)` のような固定の上限を置くと、
+       **端に寄せた窓が、画面の外へはみ出せる幅を持ったままになる**
+       （実際にそうなった）。
+       ここを開けておくこと自体は要る——直した
+       「窓が画面いっぱいで何も操作できない」が、利用者の手で戻ってくるため
+
+       【下限】小さくし過ぎて使えなくならないように。
+       170px は「見出し＋ログ1〜2行＋入力行」が残る高さ
+
+       【大きさも覚える】位置と一緒に sessionStorage（vbchat_pt_<部屋ID>）へ控え、
+       F5では戻し、部屋に入り直したらクリアする（控える・戻す処理は
+       Scripts/chat-room.js の PrivateTalk。狭い画面では控えも戻しもしない）。
+       閉じて開き直したときは忘れる（closeWindow が寸法も一緒に捨てる） */
+    .private-talk-window {
+        height: 260px;
+        resize: both;
+        overflow: hidden;
+        min-width: 240px;
+        min-height: 170px;
+    }
+
+    /* 【掴む角と、送信ボタンをぶつけないこと】
+       ブラウザが描く掴み手は、窓の右下の角およそ16px四方に出る。
+       入力行の余白が 6px / 8px のままだと、そこへ送信ボタンが食い込んでいて、
+       **どちらを触ったのか利用者にも分からない。** 角を空ける */
+    .private-talk-input-row {
+        padding-right: 18px;
+        padding-bottom: 14px;
+    }
+}
+
+
+/* こっそりの未読の知らせ（人数ボタンのすぐ下。パネルの外）。
+
+   【なぜ、参加者一覧の中だけでは足りないのか】
+   あちらはパネルを開かないと見えない。「自動で開く」をオフにしていると
+   窓も開かないので、**パネルを開くまで届いたこと自体に気づけない**。
+
+   === 【必読】バーの中に並べてはいけない。実測で決まった形である ===
+
+   最初は人数ボタンの「隣」に、ふつうの中身として並べていた。
+   **狭い画面で、バーが 53px → 76px に伸びた**（375pxで実測）。
+
+   背は高くない（17px）。伸びた理由は**折り返し**である。
+   `.room-info` に使える幅は 193px で、部屋名 78 ＋ すき間 ＋ `.room-actions` 105
+   でちょうど収まっていた。印（69px ＋ 余白6px）が入ると 258px になり、
+   **部屋名が上の段へ追い出されて2行になる。**
+   入る余地は 4px しか無いので、文字を短くしても足りない。
+
+   **flexの折り返しは、縮める前に決まる。** `.room-name` は縮められる作りだが、
+   折り返しの判定はそれを待たない（そもそも部屋名を省略しない、というのは
+   決めたことでもある）。
+
+   そこで **absolute にして、バーの寸法にいっさい関わらせない。**
+   置き場所は人数ボタンのすぐ下——「人数と三角のあたり」という要望のままで、
+   **幅がどれだけ狭くてもバーは1ミリも高くならない。**
+
+   【z-index は 15】秘密の窓の層（10）より手前、パネル（20）より奥。
+   パネルを開いているときは、誰から来たのかが分かる一覧の印のほうが要る。
+   （値の一覧は「重なりの順番」の節にある）
+
+   【押せる。押すと、その相手の窓が直接開く】
+   要望：赤い未読の印を押したら、その相手の窓が直接開く（それまでは、人数 → 一覧で相手を選ぶ、の2段）。
+   相手が何人か居たら、**最後に来た相手**を開く（JS の PrivateTalk.openLatestUnread）。
+
+   【押せる範囲は、印の大きさぴったり】それまでは pointer-events: none だった。
+   チャットログの上に浮くので、印より広い範囲で指を受けると、**その下の行に触れなくなる**
+   （層に none を付けたのと同じ話）。<button> そのものを印の形にしてあるので、
+   受けるのは目に見えている赤い四角の中だけで、その外は今までどおり下の行へ抜ける。
+   押せるようにしたので、文字と余白を少し大きくした（10px・高さ17px → 11px・高さ約23px。
+   指で押す的として、17px は小さすぎた）。
+
+   【狭い画面で窓を開いている間（全面の間）は、出さない】JS 側で hidden にしている。
+   窓の上のタブの帯とちょうど重なり、押せるようにした今は、下のタブへの指を横取りするため。
+   その間は、窓を開いていない相手の未読も、タブの帯に「未読」付きで並ぶ（renderTabs）。
+
+   【色だけで伝えていない】「こっそり未読」と文字で出している */
+.private-unread-mark {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 15;
+    margin: 0;
+    padding: 3px 8px;
+    border: 0;
+    border-radius: 4px;
+    background-color: var(--color-unread-mark);
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+    /* 【display を書いていない要素には hidden が効く】ここは display を指定していないので、
+       [hidden] の指定を足さなくてよい（.private-talk-tabs とは事情が違う） */
+
+    .private-unread-mark:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .private-unread-mark:hover {
+            opacity: 0.85;
+        }
+    }
+
+/* まだ見ていないこっそりがある印（参加者一覧の側）。
+
+   【なぜ要るのか】
+   「送られてきたら自動で開く」をオフにすると窓が開かなくなるが、
+   通知音は既定がオフなので、音でも気づけない。
+   届いたことを知る手立てが、この印しか無くなる */
+.participant-unread-mark {
+    display: block;
+    font-size: 10px;
+    color: var(--color-error-text);
+    font-weight: bold;
+}
+
+/* 「何が起きるか」の説明。項目名とスイッチの、次の行へ回り込ませる。
+
+   【flex-basis: 100% が、そのまま「次の行へ落とす」指定である】
+   .settings-item は flex-wrap: wrap なので、幅いっぱいを要求した子は
+   自然に次の行へ行く。**専用の行クラスを作る必要は無かった。**
+
+   【一度、専用の行として作って失敗している】
+   最初は .settings-item--wide という別の行にして、項目名に flex: 1 を持たせた。
+   その結果**トグルが右端まで飛び、他の項目とスイッチの左端が揃わなくなった**
+   （本番の実機で発覚）。
+   項目名は他と同じ min-width: 6em のままにして、説明だけを下の行へ回すほうが、
+   **揃えるための指定を1つも足さずに揃う** */
+.settings-item-note {
+    flex-basis: 100%;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    font-weight: normal;
+
+    /* 項目名の下に、ぶら下がって見えるようにする */
+    margin-top: -6px;
+}
+
+/* === 設定パネルの「見た目」（部屋に居ながら、自分のアイコンと色を変える） ===
+
+   【並び】項目名「見た目」と色のボタンが1行目（ほかの項目と、操作するものの左端が揃う）。
+   アイコンの並びと状態の1行は flex-basis: 100% で次の行へ落とす（.settings-item-note と同じ形。
+   揃えるための指定は足していない）。
+
+   【見た目はトップページのアイコン選択に寄せた】（Site.css の .icon-choice）。
+   選んでいないものは灰色、選んでいるものは「今の色」で描き、枠もその色にする（色は JS が style で入れる）。
+   大きさはトップ（48px）より小さい 36px——設定パネルの中で20個並べるため。
+   押せる範囲は36pxのまま縮めない（flex-shrink: 0） */
+
+/* 色のボタン（押すと、色を選ぶ道具が開く。道具は、初めて押したときに取りに行く） */
+.appearance-color-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px 0 8px;
+    background-color: #FFFFFF;
+    color: var(--color-text-strong);
+    border: 1px solid var(--color-border-input);
+    border-radius: 0; /* 隣の「ログ表示数」のセレクトボックスと同じく四角 */
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+    /* 取りに行っている間（押したのに何も起きないように見せない。文字は JS が「読み込み中…」に変える） */
+    .appearance-color-btn[aria-busy="true"] {
+        cursor: progress;
+        color: var(--color-text-muted);
+    }
+
+/* ボタンの中の2つ（色見本・「色」）は、押されない（押したのはボタン、にする）
+
+   【なぜ】jscolor は、押された要素そのもの（e.target）が自分の付いた要素でないと「外を押した」とみなし、
+   開いている道具を閉じる。ここを押すと一瞬閉じてから、ボタンの click で開き直す形になる。
+   開くこと自体は chat-room.js の click が受け持つ（jscolor の showOnClick は切ってある）ので、これは閉じてしまうのを防ぐ側 */
+.appearance-color-btn > span {
+    pointer-events: none;
+}
+
+/* 今の色の見本（色は JS が background-color に入れる） */
+.appearance-color-swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+/* 今のアイコンを出すボタン（押すと小窓が開く）。
+   大きさは色のボタン（32px）と同じ高さにそろえてある */
+.appearance-icon-btn {
+    width: 32px;
+    height: 32px;
+    padding: 3px;
+    box-sizing: border-box;
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border-input);
+    border-radius: 0;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+    /* 中の絵は押されない（押したのはボタン、にする。色のボタンの中の span と同じ） */
+    .appearance-icon-btn > svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .appearance-icon-btn[aria-expanded="true"] {
+        border-color: var(--color-accent);
+    }
+
+/* アイコンを選ぶ小窓
+
+   【position: fixed である】設定パネルは中がスクロールするので、absolute だと切り落とされる。
+   fixed の基準は画面そのもので、overflow では切られない
+   （**祖先に transform / filter / will-change があると、そちらが基準になって切られる**。
+     「position: fixed の基準」の落とし穴）。置き場所（left / top）は chat-room.js が入れる。
+
+   【アイコンが増えても、設定パネルの大きさは変わらない】伸びるのは、この中のスクロールだけ。
+   高さの上限は「6段ぶん」くらいの目安（40px × 6 ＋ 余白）。増えたら、この1行を変える */
+.appearance-icon-panel {
+    position: fixed;
+    z-index: 40; /* 部屋の重なり順（こっそりの窓10／未読15／パネル20／ノック25／新着あり30）より手前。
+                    設定パネルの中から開くものなので、パネルより手前でなければならない */
+    box-sizing: border-box;
+    max-width: min(320px, calc(100vw - 24px));
+    max-height: min(268px, calc(100vh - 24px));
+    overflow-y: auto;
+    padding: 8px;
+    background-color: var(--color-background-dark); /* 設定パネルと同じ地（theme.css） */
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* アイコンの並び。入るだけ並べて折り返す */
+.appearance-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* アイコン1つ（押せるラジオボタン） */
+.appearance-icon-choice {
+    width: 36px;
+    height: 36px;
+    padding: 3px;
+    box-sizing: border-box;
+    background-color: #FFFFFF;
+    color: var(--color-icon-unselected);
+    border: 2px solid var(--color-border-gray);
+    border-radius: 0;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+    .appearance-icon-choice svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* 選んでいるもの。色と枠の色は JS が「今の色」で上書きする（ここは届く前の受け皿） */
+    .appearance-icon-choice[aria-checked="true"] {
+        color: var(--color-accent);
+        border-color: var(--color-accent);
+    }
+
+    .appearance-icon-choice:focus-visible,
+    .appearance-color-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+@media (hover: hover) and (pointer: fine) {
+    .appearance-icon-choice:not([aria-checked="true"]):hover {
+        border-color: var(--color-text-muted);
+    }
+
+    .appearance-color-btn:hover {
+        border-color: var(--color-text-muted);
+    }
+}
+
+/* 状態の1行（読み込み中・取れなかった・変えられなかった）
+
+   【隠さない】aria-live は、隠れている間の変更を読まない。
+   空のときは高さ0の行になり、行のすき間（12px）だけが残るので、それを負の余白で打ち消す */
+.appearance-status {
+    flex-basis: 100%;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: -6px;
+}
+
+    .appearance-status:empty {
+        margin-top: -12px;
+    }
+
+    .appearance-status.is-error {
+        color: var(--color-error-text);
+        font-weight: bold;
+    }
+
+/* === 設定パネルの「部屋の設定」（管理人だけ） ===
+
+   行は「見た目」と同じ .settings-item（項目名の min-width: 6em で、操作するものの左端が揃う）。
+   説明（.settings-item-note）とパスワードの欄は flex-basis: 100% で次の行へ落とす。
+   管理人でなければ hidden（display を書いているので [hidden] も書く） */
+.room-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* 【地の色を変えた】（要望：部屋の設定の部分の背景の色を少し変える）
+       管理人だけの場所だと一目で分かるように。色はラウンジの管理人の顔の囲いと同じ「薄い青の地＋青い線」
+       （theme.css の --color-owner-*）。それまでは上に線を1本引いただけだった */
+    background-color: var(--color-owner-bg);
+    box-shadow: inset 0 0 0 1px var(--color-owner-line);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+    .room-settings[hidden] {
+        display: none;
+    }
+
+    /* 地が明るくなったぶんで、薄い文字を「控えめな文字」にそろえる。
+       --color-text-muted（#64748B）は、この地（#EFF3FE）の上で 4.29:1 と基準（4.5:1）に届かない。
+       --color-text-quiet（#525D71）なら 5.98:1 */
+    .room-settings .settings-item-note,
+    .room-settings .room-settings-title-note,
+    .room-settings .room-settings-status:not(.is-error) {
+        color: var(--color-text-quiet);
+    }
+
+.room-settings-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--color-text-strong);
+}
+
+.room-settings-title-note {
+    font-weight: normal;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* 部屋名・パスワードの欄（隣の「定員」のセレクトボックスと同じ質感。四角・白地） */
+.room-setting-input {
+    background-color: #FFFFFF;
+    color: var(--color-text-strong);
+    border: 1px solid var(--color-border-input);
+    border-radius: 0;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    margin: 0;
+    flex: 1 1 10em;
+    min-width: 0;
+    max-width: 16em;
+}
+
+/* 今のパスワード（管理人には見える）。スイッチと説明の下の行へ。
+   最初は伏せ字で、「見る」を押したときだけハブからもらって出す（パネルを閉じたら、また伏せる） */
+.room-setting-current {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    font-size: 13px;
+    color: var(--color-text-strong);
+    margin-top: -4px;
+}
+
+    .room-setting-current[hidden] {
+        display: none;
+    }
+
+.room-setting-current-label {
+    color: var(--color-text-quiet);
+}
+
+/* パスワードは人に伝える言葉なので、読み違えにくい等幅で。長くても折り返す（32文字まで） */
+.room-setting-current-value {
+    font-family: Consolas, "Courier New", monospace;
+    word-break: break-all;
+    user-select: all;
+
+    /* 【消さないこと】中に読み上げ用の .visually-hidden（position: absolute）がある
+       （伏せ字に戻したときの「伏せています」。読み上げの点検の回）。
+       設定パネルはスクロールする枠なので、基準になる箱をここに持たせておく
+       （.room-ban-item と同じ理由） */
+    position: relative;
+}
+
+    /* 見せられない理由（「表示できません」など）は、ふつうの文字で */
+    .room-setting-current-value.is-message {
+        font-family: inherit;
+        color: var(--color-text-quiet);
+        user-select: auto;
+    }
+
+/* 新しいパスワードの欄と「かける」ボタン（鍵を切っている間は、JS が両方とも使えなくする） */
+.room-setting-password-row {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: -4px;
+}
+
+.room-setting-password {
+    max-width: 20em;
+}
+
+    .room-setting-password:disabled {
+        background-color: var(--color-background-gray);
+        color: var(--color-text-muted);
+    }
+
+/* 「変える」「かける」「見る」の小さいボタン（保存ボタンをやめて、項目ごとに置いた）。
+   欄（.room-setting-input）と同じ高さに収まる大きさ */
+.room-setting-btn {
+    background-color: var(--color-accent);
+    color: #FFFFFF;
+    border: 1px solid var(--color-accent);
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+    .room-setting-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .room-setting-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    /* 「見る」「隠す」は控えめに（枠だけ） */
+    .room-setting-btn--quiet {
+        background-color: #FFFFFF;
+        color: var(--color-accent);
+    }
+
+@media (hover: hover) and (pointer: fine) {
+    .room-setting-btn:not(:disabled):hover {
+        background-color: var(--color-accent-dark);
+        border-color: var(--color-accent-dark);
+        color: #FFFFFF;
+    }
+}
+
+/* === 入室禁止にした人（部屋の設定のいちばん下） ===
+
+   説明・一覧・「いません」・理由の1行は、どれも flex-basis: 100% で次の行へ落とす（.settings-item-note と同じ形）。
+   1人ぶんは［アイコン 名前 トリップ］［解除］の横並び。名前は折り返す（誰の禁止を解くかを決める場面なので、省略しない） */
+.room-bans .room-ban-list,
+.room-bans .room-ban-empty,
+.room-bans .room-settings-status {
+    flex-basis: 100%;
+}
+
+.room-ban-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+    .room-ban-list[hidden] {
+        display: none;
+    }
+
+.room-ban-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* 【消さないこと】中のトリップに読み上げ用の .visually-hidden（position: absolute）がある。
+       ここが基準にならないと、スクロールする設定パネルの枠に切られず、ページを伸ばす */
+    position: relative;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+
+.room-ban-avatar {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+    .room-ban-avatar svg {
+        width: 100%;
+        height: 100%;
+    }
+
+.room-ban-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+    color: var(--color-text-strong);
+}
+
+.room-ban-trip {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+    /* 解除は右端 */
+    .room-ban-item .room-ban-lift-btn {
+        margin-left: auto;
+    }
+
+.room-ban-empty {
+    font-size: 12px;
+    color: var(--color-text-quiet);
+}
+
+    .room-ban-empty[hidden] {
+        display: none;
+    }
+
+/* 変えた・断られた理由（aria-live。隠さない＝空のときは幅0の文字列） */
+.room-settings-status {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+    .room-settings-status.is-error {
+        color: var(--color-error-text);
+        font-weight: bold;
+    }
+
+/* 入れるもののタブ（「画像」）は、部屋の設定で出し入れする。
+   .insert-tab は display を持たないが、今後書かれても hidden が負けないように明示しておく */
+.insert-tab[hidden] {
+    display: none;
+}
+
+/* === 狭い画面で、こっそりの窓を開いている間は、本体の入力欄を隠す ===
+
+   【「打っている間だけ」から「窓を開いている間ずっと」へ広げた】
+：スマホでこっそりの窓を開いたら全面にする。上のバーだけ残し、本体の入力欄なども消す。
+   印は .chat-room.is-private-full（JS の PrivateTalk.syncFullScreen が付け外しする。
+   狭い画面で、窓が1枚以上開いているとき）。窓を全部閉じれば外れて、入力欄は戻る。
+   それまでの印 is-private-typing（こっそりの入力欄に焦点がある間）は、この印に含まれるので消した。
+
+   以下は「打っている間だけ隠す」を入れた記録（隠す理由と、隠し方の罠はそのまま効く）。
+
+   決定：こっそりに入力しようとしているときは、本体の入力欄を隠す。
+   透けて見えているだけで、こっそりの窓が開いている間は本体の部屋では発言しないため。
+
+   【、決定を覆した】
+   は「しまわない。縮めるだけ」にしていた。当時の理由は、
+   **見えていないものはタップできないので、本体に打ちたくなった人が戻せなくなる**
+   （そのときは「しまう」案を取り下げた）。
+   今回、その答えが2つそろった——
+     ・**こっそりに打っている間は、本体では発言しない**（開発者の判断）
+     ・**打つのをやめれば戻る**（印は焦点が外れた瞬間に外れる）ので、戻せなくなることが無い
+       （は「窓を全部閉じれば戻る」。窓の × はいつでも見えているので、戻せなくなることは無い）
+
+   【当時の実測は、縮める形を選んだ根拠として残しておく】（375px幅）
+       今の姿                 … 入力行 119px
+       入力欄だけ1行にする     … 110px（9pxしか縮まない）
+       丸ボタンも隠して横並び  … 74px（45px縮む）
+   入力行の高さを決めていたのは入力欄ではなく、右側の縦積み（丸44 ＋ 8 ＋ 送信33）だった。
+   隠す形にしたので、この3つの縮め方の指定は消した（gitの履歴に残っている）。
+
+   【行（.chat-input-row）そのものは消さない。中身だけを隠す】
+   発言に入れるものを選ぶパネル（#insertPanel）は、この行の子で、
+   行の上端を基準に浮いている。**行ごと display: none にするとパネルまで消える**
+   ——たとえば狭くしたパソコンの窓で、こっそりの窓あてに絵文字を入れると、
+   焦点が入力欄へ戻って印が付き、開いているはずのパネルが見えなくなる。
+   そこで入力欄とボタンだけを隠し、行は余白と線を0にして高さ0で残す。
+   パネルは画面の下端から浮く形になる。
+
+   【文字数と改行の案内の行（.chat-input-info）も隠す】本体の入力欄の付属だから。
+
+   【狭いときだけ】PCはキーボードが出ないので、隠す理由が無い */
+/* === 狭い画面で、スタンプ・画像のタブを選んでいる間も、本体の入力欄を隠す ===
+
+：縦の余裕を一覧に回す。**絵文字のタブのときは文字を打つので出したまま**。
+   印は .chat-room.is-insert-media（JS の InsertPanel.syncMediaTabInput が付け外しする）。
+   隠し方は上の is-private-full とまったく同じ（**行は残して、中身だけ隠す**。
+   行ごと消すとパネルまで消える罠を、踏んでいる）。
+
+   【止めるときは JS 側の1か所】HIDE_INPUT_ON_MEDIA_TABS を false にすれば、印が付かなくなる
+   （絵文字⇔スタンプを切り替えるたびにパネルが入力欄のぶん上下するのが気になったら、戻せるように）
+
+   【狭いときだけ】PC幅では変えない（開発者の指定） */
+/* === 狭い画面で、設定パネルを開いている間も、本体の入力欄を隠す ===
+
+   要望：スマホで「部屋の設定」の部屋名を打とうとしたときは、発言欄を閉じる。
+   キーボードが出ると画面が縮み、設定パネルと発言欄が残りの高さを取り合う。発言欄を隠せば、そのぶんがパネルに回る。
+   印は .chat-room.is-settings-open（JS の setOpenPanel が、設定パネルを開いている間だけ付ける）。パネルを閉じれば戻る。
+   **ほかの2つのパネルでは隠さない**（入れるもののパネルは発言欄と一緒に使い、参加者一覧は相手を選んで発言に入れる）。
+   隠し方は上の2つとまったく同じ（行は残して、中身だけ隠す） */
+@media (max-width: 700px) {
+
+    .chat-room.is-private-full .chat-input-info,
+    .chat-room.is-private-full .message-input,
+    .chat-room.is-private-full .chat-input-actions,
+    .chat-room.is-insert-media .chat-input-info,
+    .chat-room.is-insert-media .message-input,
+    .chat-room.is-insert-media .chat-input-actions,
+    .chat-room.is-settings-open .chat-input-info,
+    .chat-room.is-settings-open .message-input,
+    .chat-room.is-settings-open .chat-input-actions {
+        display: none;
+    }
+
+    .chat-room.is-private-full .chat-input-row,
+    .chat-room.is-insert-media .chat-input-row,
+    .chat-room.is-settings-open .chat-input-row {
+        padding: 0;
+        border-top: 0;
+    }
+}
+
+/* ============================================
+   ノックの返事待ち（部屋の管理人の画面だけ）
+   ============================================
+
+   ［顔］〇〇さんがノックしています
+         a1b2c3d4e5
+         あと 58 秒
+   （断られた理由）
+                      ［断る］［入れる］
+
+   【ログの上端に浮かせる】.chat-log-wrapper（position: relative）が基準。
+   何人来ても並べて出す。並びきらなければ、この箱の中だけでスクロールする
+   （ログの半分まで。ログそのものは読めるように残す）。
+   重なり順は 25（上の「重なり順の決め方」）。
+
+   【下敷きは敷かない】会話を止めない。箱の外（ログ）は、今までどおり触れる。
+   ただし箱そのものは指を受ける（pointer-events は既定のまま）。幅を中身ぶんに絞ってあるので、
+   ログの左右の端は触れる
+
+   【縁の色は、ラウンジのノックのボタンと同じ】（--color-knock）。
+   「入る」ではなく「頼まれている」ことを、ラウンジと同じ色で伝える。色だけには頼らない（文言がある） */
+.knock-requests {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(420px, calc(100% - 24px));
+    max-height: 50%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+    /* display を書いた要素には hidden が効かない */
+    .knock-requests[hidden] {
+        display: none;
+    }
+
+.knock-request {
+    background-color: #FFFFFF;
+    border: 2px solid var(--color-knock);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: var(--color-text-strong);
+}
+
+.knock-request-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 顔（部屋の参加者一覧と同じアイコン。大きさは 32px） */
+.knock-request-icon {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+}
+
+    .knock-request-icon svg {
+        width: 100%;
+        height: 100%;
+    }
+
+.knock-request-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* 名前は長くても省略しない（誰を入れるのかを決める場面なので、全部読めるほうがよい）。折り返す */
+.knock-request-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+
+.knock-request-trip {
+    display: block;
+}
+
+.knock-request-time {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--color-text-quiet);
+}
+
+/* 返事が通らなかった理由（臨時の席がいっぱい、など）。空のときは高さを持たない */
+.knock-request-error {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--color-error-text);
+}
+
+    .knock-request-error:empty {
+        display: none;
+    }
+
+.knock-request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* ボタンの大きさは、部屋のほかのボタンと同じ変数（--chat-btn-*）から取る。
+   指で押す的なので、狭い画面でも縮めない（flex-shrink: 0） */
+.knock-request-btn {
+    flex-shrink: 0;
+    padding: var(--chat-btn-padding);
+    font-size: var(--chat-btn-font-size);
+    font-family: inherit;
+    border: var(--chat-btn-border-width) solid var(--color-knock);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* 断る＝枠線だけ（安全な側を控えめに。ログアウトのボタンと同じ考え方） */
+.knock-request-deny {
+    background-color: #FFFFFF;
+    color: var(--color-knock);
+}
+
+.knock-request-approve {
+    background-color: var(--color-knock);
+    color: #FFFFFF;
+}
+
+    .knock-request-btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+    }
+
+    .knock-request-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .knock-request-btn:not(:disabled):hover {
+            opacity: 0.85;
+        }
+    }
+
+/* 消えた理由に差し替えた小窓（⑥）。文言と×の横並び */
+.knock-request--notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+}
+
+.knock-request-notice {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 6px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* ×。指で押す的なので 32px 角 */
+.knock-request-close {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-knock);
+    font-family: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+    .knock-request-close:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .knock-request-close:hover {
+            background-color: var(--color-accent-bg);
+        }
+    }
+
+
+/* === 確認ダイアログ（Content/Site.css の「確認ダイアログ」の写し） ===
+
+   管理人の道具（参加者一覧の「管理人をゆずる」「退室させる」「入室禁止にする」）で、押す前に1回出す。
+   JS は Scripts/chat-room.js の vbChatConfirm（Scripts/site.js の写し）。
+   部屋（Chat/ChatRoom.aspx）は Site.Master を使わないので、Site.css を読み込んでいない。
+   **片方だけ直さないこと**（トグルスイッチと同じ事情で、2か所に写しがある）。
+
+   【Site.css と違うところは1つだけ】「実行する」ボタン（--ok）の色。
+   Site.css では、ページ全体の button の決まり（テーマカラーの地に白い文字）がそのまま効いている。
+   部屋にはその決まりが無いので、ここに書いてある */
+.custom-confirm-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: var(--color-modal-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    /* 部屋の中のどの層（こっそりの窓 10／パネル 20／ノック 25／新着あり 30）よりも手前 */
+    z-index: 1100;
+}
+
+.custom-confirm {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    max-width: 380px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    color: var(--color-text-strong);
+}
+
+.custom-confirm-title {
+    margin: 0 0 12px 0;
+    font-size: 17px;
+    font-weight: bold;
+    /* 利用者が決めた長い名前が入っても、箱からはみ出さない */
+    overflow-wrap: anywhere;
+}
+
+    .custom-confirm-body p {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+        .custom-confirm-body p:last-child {
+            margin-bottom: 0;
+        }
+
+.custom-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+/* 大きく見せる1行（外のサイトへ移動するときの、行き先のドメイン）
+
+   【なぜドメインだけを大きく出すのか】
+   news.yahoo.co.jp.あやしい.com のような偽物は、URL の全体を並べると見落とす。
+   ドメインだけを大きく出せば「あやしい.com」のほうが目に入る。
+   日本語のドメインや、見た目の似た文字を使った偽物は xn-- で始まる形で出るので、
+   そのまま見せるほうが見抜きやすい（変換して見せないこと） */
+/* 【必ず .custom-confirm-body を前に付けること】
+   すぐ上の `.custom-confirm-body p` のほうが詳細度が高く、クラスだけで書くと
+   font-size が 14px に負ける（実際に一度そうなり、ドメインが大きくならなかった） */
+.custom-confirm-body .custom-confirm-strong {
+    margin: 0 0 4px;
+    padding: 10px 12px 2px;
+    background-color: var(--color-accent-bg); /* 薄い青の地。ここだけ別の場所だと分かるように */
+    border-radius: 6px 6px 0 0;
+    font-size: 22px;
+    font-weight: bold;
+    line-height: 1.3;
+    color: var(--color-text-strong);
+    overflow-wrap: anywhere; /* 長いドメインでも、小窓からはみ出させない */
+}
+
+/* その下に添える、URL の全体（小さく・折り返す）。地はドメインと続きにする */
+.custom-confirm-body .custom-confirm-sub {
+    margin: 0 0 14px;
+    padding: 0 12px 10px;
+    background-color: var(--color-accent-bg);
+    border-radius: 0 0 6px 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-text-sub); /* quiet だと、薄い青の地の上で 4.5:1 に届かない */
+    overflow-wrap: anywhere;
+}
+
+.custom-confirm-btn {
+    padding: 8px 16px;
+    /* border: none にしない（枠線のぶんだけ高さがずれる。Site.css と同じ） */
+    border: 1px solid transparent;
+    border-radius: 4px;
+    min-height: 44px;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+
+    /* 【実行する側が <a> になることがある】（オートリンク）
+       確認のあとに window.open を呼ぶとブラウザに止められることがあるので、
+       外のサイトへ行くときだけ、ボタンそのものをリンクにしてある。
+       下の3行は、<a> をボタンと同じ見た目にするためのもの（<button> には効かない） */
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+    .custom-confirm-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+.custom-confirm-btn--cancel {
+    background-color: transparent;
+    color: var(--color-text-sub);
+    border-color: var(--color-text-sub);
+}
+
+/* 実行する側（Site.css ではページ全体の button の決まりから来ている色。白い文字とテーマカラーで 5.17:1） */
+.custom-confirm-btn--ok {
+    background-color: var(--color-accent);
+    color: #FFFFFF;
+    border-color: var(--color-accent);
+}
+
+    @media (hover: hover) and (pointer: fine) {
+
+        .custom-confirm-btn--cancel:hover {
+            background-color: var(--color-accent-bg);
+        }
+
+        .custom-confirm-btn--ok:hover {
+            background-color: var(--color-accent-dark);
+            border-color: var(--color-accent-dark);
+        }
+    }
