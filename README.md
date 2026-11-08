@@ -3,7 +3,7 @@
 **登録なしでも参加できるリアルタイムのチャット**と、アカウントを作った人が書ける**ブログ**のサイトです。
 VB.NET（ASP.NET Web Forms）で作りました。
 
-- 本番：https://vb-chat.rana-grande.biz（検索エンジンには載せていない＝noindex）
+- 本番：<https://vb-chat.rana-grande.biz>（検索エンジンには載せていない＝noindex）
 - 使い方：[画面の写真つきで7ページ](https://vb-chat.rana-grande.biz/articles/kanrinin/howto)
 - 技術：VB.NET / ASP.NET Web Forms（.NET Framework 4.8）／SignalR 2.4.3／SQL Server／JavaScript（jQuery）と CSS
 - 作った人：森真樹（個人開発）
@@ -15,7 +15,7 @@ VB.NET（ASP.NET Web Forms）で作りました。
 
 ## なぜ作ったか
 
-2000年代初頭にある会社で社内SE的な立場になり、独学で Access と SQL Server で業務システムを作り、その後 VB.NET（ASP.NET Web Forms）でCMSを自作しました。その頃、リアルタイムチャットのサイトをよく利用していたので、SignalR が出た時に自作にチャレンジ。ただ、作り切れずに中断していたところ、最近になって AI を使うようになり、もう一度挑戦したくなったことが理由です。
+リアルタイムチャットのサイトをよく利用していたので、SignalR が出た時に自作にチャレンジ。ただ、作り切れずに中断していたところ、最近になって AI を使うようになり、もう一度挑戦したくなったことが理由です。
 
 ---
 
